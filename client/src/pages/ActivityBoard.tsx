@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Calendar as CalendarWidget } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { MapPin, Calendar, CalendarDays, List, Users, Search, CheckCircle, BookOpen, GraduationCap, Newspaper, ExternalLink, Plus, BellRing, ShieldCheck, Trophy, Megaphone, Bookmark, BookmarkCheck, Share2, SlidersHorizontal, ChevronDown, Heart, Sparkles, ArrowRight } from "lucide-react";
-import { MapView } from "@/components/Map";
+import { MapView, addMarker, type MapInstance } from "@/components/Map";
+import { searchNearbyPlaces } from "@/lib/maptiler";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { LocalVenueBanner } from "@/components/LocalVenueBanner";
@@ -348,30 +349,20 @@ export default function ActivityBoard() {
     });
   }
 
-  const handleMapReady = useCallback((map: google.maps.Map) => {
+  const handleMapReady = useCallback((map: MapInstance) => {
     setMapReady(true);
-    const service = new google.maps.places.PlacesService(map);
     const center = map.getCenter();
-    if (!center) return;
     const types = ["library", "bowling_alley", "movie_theater", "restaurant", "park", "gym", "spa"];
     types.forEach(type => {
-      service.nearbySearch(
-        { location: center, radius: 5000, type },
-        (results, status) => {
-          if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-            results.slice(0, 3).forEach(place => {
-              if (place.geometry?.location) {
-                new google.maps.Marker({
-                  position: place.geometry.location,
-                  map,
-                  title: place.name,
-                  icon: { url: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png" },
-                });
-              }
-            });
-          }
-        }
-      );
+      searchNearbyPlaces({ lat: center.lat, lng: center.lng }, type, { radiusMeters: 5000, max: 3 })
+        .then(places => {
+          places.forEach(place => {
+            addMarker(map, { lat: place.lat, lng: place.lng, label: place.name, color: "#3b82f6" });
+          });
+        })
+        .catch(() => {
+          // Markers are a nicety; the board works without them.
+        });
     });
   }, []);
 

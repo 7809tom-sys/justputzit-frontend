@@ -5,7 +5,8 @@ import { AdvisorAvatar } from "@/components/AdvisorAvatar";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Star, ExternalLink, RefreshCw, Navigation, Search, Sparkles, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
-import { MapView } from "@/components/Map";
+import { MapView, addMarker, type MapInstance, type MapMarker } from "@/components/Map";
+import { directionsUrl, searchNearbyPlaces } from "@/lib/maptiler";
 import { LocalVenueBanner } from "@/components/LocalVenueBanner";
 import { useUserCity } from "@/hooks/useUserCity";
 import { useLocation } from "wouter";
@@ -43,8 +44,9 @@ export default function Activities() {
   const [searchQuery, setSearchQuery] = useState("");
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
-  const mapRef = useRef<google.maps.Map | null>(null);
-  const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
+  const mapRef = useRef<MapInstance | null>(null);
+  const markersRef = useRef<MapMarker[]>([]);
+  const searchSeq = useRef(0);
 
   const { data: profile } = trpc.profile.get.useQuery();
   const { detectedCity } = useUserCity();
@@ -65,58 +67,39 @@ export default function Activities() {
     { enabled: true, staleTime: 60_000 }
   );
 
-  const searchNearby = (map: google.maps.Map, location: { lat: number; lng: number }, type: string) => {
+  const searchNearby = async (map: MapInstance, location: { lat: number; lng: number }, type: string) => {
+    const seq = ++searchSeq.current;
     setIsLoading(true);
     setPlaces([]);
     // Clear old markers
-    markersRef.current.forEach(m => (m.map = null));
+    markersRef.current.forEach(m => m.remove());
     markersRef.current = [];
 
-    const service = new google.maps.places.PlacesService(map);
-    service.nearbySearch(
-      {
-        location,
-        radius: 5000,
-        type: type as any,
-      },
-      (results, status) => {
-        setIsLoading(false);
-        if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-          const mapped: Place[] = results.slice(0, 12).map(r => ({
-            name: r.name || "Unknown",
-            vicinity: r.vicinity || "",
-            rating: r.rating,
-            userRatingsTotal: r.user_ratings_total,
-            types: r.types || [],
-            placeId: r.place_id || "",
-            lat: r.geometry?.location?.lat() || 0,
-            lng: r.geometry?.location?.lng() || 0,
-            openNow: r.opening_hours?.isOpen?.(),
-            distanceMiles: haversineDistanceMiles(
-              location.lat,
-              location.lng,
-              r.geometry?.location?.lat() || 0,
-              r.geometry?.location?.lng() || 0,
-            ),
-          }));
-          setPlaces(mapped);
-          // Add markers
-          mapped.forEach(place => {
-            const marker = new google.maps.marker.AdvancedMarkerElement({
-              map,
-              position: { lat: place.lat, lng: place.lng },
-              title: place.name,
-            });
-            markersRef.current.push(marker);
-          });
-        } else if (status !== google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
-          toast.error("Couldn't load nearby places");
-        }
-      }
-    );
+    try {
+      const found = await searchNearbyPlaces(location, type, { radiusMeters: 5000, max: 12 });
+      if (seq !== searchSeq.current) return; // a newer search started while this one was loading
+      const mapped: Place[] = found.map(r => ({
+        name: r.name || "Unknown",
+        vicinity: r.address,
+        types: r.categories,
+        placeId: r.id,
+        lat: r.lat,
+        lng: r.lng,
+        distanceMiles: haversineDistanceMiles(location.lat, location.lng, r.lat, r.lng),
+      }));
+      setPlaces(mapped);
+      // Add markers
+      mapped.forEach(place => {
+        markersRef.current.push(addMarker(map, { lat: place.lat, lng: place.lng, label: place.name }));
+      });
+    } catch {
+      if (seq === searchSeq.current) toast.error("Couldn't load nearby places");
+    } finally {
+      if (seq === searchSeq.current) setIsLoading(false);
+    }
   };
 
-  const handleMapReady = (map: google.maps.Map) => {
+  const handleMapReady = (map: MapInstance) => {
     mapRef.current = map;
     if (trustedLocation) {
       setUserLocation(trustedLocation);
@@ -135,11 +118,7 @@ export default function Activities() {
         map.setCenter(loc);
         map.setZoom(14);
         // User marker
-        new google.maps.marker.AdvancedMarkerElement({
-          map,
-          position: loc,
-          title: "You are here",
-        });
+        addMarker(map, { lat: loc.lat, lng: loc.lng, label: "You are here", color: "#2563eb" });
         updateLocation.mutate({ latitude: String(loc.lat), longitude: String(loc.lng) });
         searchNearby(map, loc, activeType);
       },
@@ -342,7 +321,7 @@ function PlaceCard({ place, typeLabel, isFeatured }: { place: Place; typeLabel: 
             </p>
           )}
         </div>
-        <a href={`https://www.google.com/maps/place/?q=place_id:${place.placeId}`} target="_blank" rel="noopener noreferrer" className="flex-shrink-0">
+        <a href={directionsUrl(place.lat, place.lng)} target="_blank" rel="noopener noreferrer" className="flex-shrink-0">
           <Button size="sm" variant="outline" className="rounded-xl gap-1.5 text-xs">
             <ExternalLink className="w-3 h-3" /> View
           </Button>
