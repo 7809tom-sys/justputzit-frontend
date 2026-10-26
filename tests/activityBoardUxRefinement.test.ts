@@ -1,0 +1,64 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { describe, expect, it } from "vitest";
+
+describe("Activity Board UX refinement", () => {
+  const board = readFileSync(resolve(__dirname, "../client/src/pages/ActivityBoard.tsx"), "utf8");
+  const location = readFileSync(resolve(__dirname, "../client/src/components/LocationOverrideControl.tsx"), "utf8");
+
+  it("keeps saved-location naming behind an explicit bookmark action", () => {
+    expect(location).toContain("Bookmark this location");
+    expect(location).toContain("showSaveLocation");
+  });
+
+  it("offers compact filters, consistent counts, sorting, and card-level event actions", () => {
+    expect(board).toContain("More filters");
+    expect(board).toContain('aria-label="Sort community events"');
+    expect(board).toContain("current event");
+    expect(board).toContain("Save ${event.title} for later");
+    expect(board).toContain("<Share2");
+    expect(board).toContain("More info");
+  });
+
+  it("places the partner promotion naturally within the community feed", () => {
+    expect(board).toContain('key="native-sponsor-cta"');
+    expect(board).toContain("index !== 1");
+  });
+
+  it("offers a filtered, selectable Community Events calendar view", () => {
+    expect(board).toContain("CalendarWidget");
+    expect(board).toContain('aria-label="Community Events calendar"');
+    expect(board).toContain("selectedCommunityEvents");
+    expect(board).toContain("Show all current events");
+  });
+
+  it("orders Trending by the aggregate-only event interest signal", () => {
+    expect(board).toContain("interestCount");
+    expect(board).toContain("engagementDifference");
+  });
+
+  it("allows an explicit member interest action while keeping card engagement aggregate-only", () => {
+    expect(board).toContain("toggleEventInterest");
+    expect(board).toContain('trpc.events.myInterests.useQuery');
+    expect(board).toContain('status: "interested"');
+    expect(board).toContain("interestedEventIds");
+    expect(board).toContain("interested");
+  });
+
+  it("labels Downtown Waukesha records with their authoritative source", () => {
+    expect(board).toContain("downtown_waukesha");
+    expect(board).toContain("Downtown Waukesha");
+  });
+
+  it("labels Waukesha Area Chamber records with their authoritative source", () => {
+    expect(board).toContain("waukesha_chamber");
+    expect(board).toContain("Waukesha Area Chamber");
+  });
+
+  it("labels La Crosse library and parks records with their authoritative sources", () => {
+    expect(board).toContain("la_crosse_library");
+    expect(board).toContain("La Crosse Library");
+    expect(board).toContain("la_crosse_parks");
+    expect(board).toContain("La Crosse Parks & Recreation");
+  });
+});

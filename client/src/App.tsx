@@ -1,0 +1,196 @@
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import NotFound from "@/pages/NotFound";
+import { Route, Switch, useLocation } from "wouter";
+import { useEffect } from "react";
+import ErrorBoundary from "./components/ErrorBoundary";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import Home from "./pages/Home";
+import Onboarding from "./pages/Onboarding";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import Interview from "./pages/Interview";
+import Profile from "./pages/Profile";
+import ProfileDashboard from "./pages/ProfileDashboard";
+import Matches from "./pages/Matches";
+import Chat from "./pages/Chat";
+import Games from "./pages/Games";
+import ActivityBoard from "./pages/ActivityBoard";
+import Community from "./pages/Community";
+import Safety from "./pages/Safety";
+import Admin from "./pages/Admin";
+import Concierge from "./pages/Concierge";
+import Marketplace from "./pages/Marketplace";
+import PaymentConfirmation from "./pages/PaymentConfirmation";
+import Bookings from "./pages/Bookings";
+import Vendor from "./pages/Vendor";
+import PartnerResults from "./pages/PartnerResults";
+import Couples from "./pages/Couples";
+import WouldYouRather from "@/pages/WouldYouRather";
+import WyrChallenge from "@/pages/WyrChallenge";
+import PickAPlan from "@/pages/PickAPlan";
+import CampusWaitlist from "@/pages/CampusWaitlist";
+import CampusPage from "@/pages/Campus";
+import SignUp from "@/pages/SignUp";
+import Login from "@/pages/Login";
+import Verify from "@/pages/Verify";
+import Events from "@/pages/Events";
+import Horoscope from "@/pages/Horoscope";
+import Notifications from "@/pages/Notifications";
+import AdminMembers from "@/pages/AdminMembers";
+import { APP_ROUTES } from "@/lib/routes";
+import GameLobby from "@/pages/GameLobby";
+import Entertainment from "@/pages/Entertainment";
+import ShoutOut from "@/pages/ShoutOut";
+import AccountVerify from "@/pages/AccountVerify";
+import AdvertiseWithUs from "@/pages/AdvertiseWithUs";
+import AdminAdvertising from "@/pages/AdminAdvertising";
+import CityLanding from "@/pages/CityLanding";
+import EventDetail from "@/pages/EventDetail";
+import TriviaGame from "@/pages/TriviaGame";
+import GamesHub from "@/pages/GamesHub";
+import SocialGames from "@/pages/SocialGames";
+import Family from "@/pages/Family";
+import TripPlanner from "@/pages/TripPlanner";
+import Jeopardy from "@/pages/Jeopardy";
+import TriviaPursuit from "@/pages/TriviaPursuit";
+import FinishSentence from "@/pages/FinishSentence";
+import Bullgerdash from "@/pages/Bullgerdash";
+import BullgerdashGroup from "@/pages/BullgerdashGroup";
+import Sports from "@/pages/Sports";
+import WatchParty from "@/pages/WatchParty";
+import LiveScores from "@/pages/LiveScores";
+import GymBuddy from "@/pages/GymBuddy";
+import GymPage from "@/pages/GymPage";
+import GymPitch from "@/pages/GymPitch";
+import MyWorkout from "@/pages/MyWorkout";
+import Privacy from "@/pages/Privacy";
+import SharedQuestionSync from "@/pages/SharedQuestionSync";
+import { FloatingInstallButton } from "@/components/FloatingInstallButton";
+import MobileBottomNav from "@/components/MobileBottomNav";
+import Navbar from "@/components/Navbar";
+import { trpc } from "@/lib/trpc";
+
+// Routes that are allowed without account verification
+const PUBLIC_ROUTES = ["/login", "/signup", "/forgot-password", "/reset-password", "/verify", "/verify-account", "/404", "/city/", "/events/", "/profile", "/gym-pitch", "/privacy", "/developer-sync"];
+
+/**
+ * Verification gate — runs on every navigation for logged-in users.
+ * If the user hasn't completed passkey + GPS photo, they're redirected to /verify-account.
+ */
+function VerificationGate({ children }: { children: React.ReactNode }) {
+  const [location, navigate] = useLocation();
+  const { data: user } = trpc.auth.me.useQuery();
+  const { data: status } = trpc.passkey.verificationStatus.useQuery(undefined, {
+    enabled: !!user,
+    staleTime: 30_000,
+  });
+
+  useEffect(() => {
+    // Only gate logged-in users
+    if (!user) return;
+    // Don't redirect if already on a public route
+    if (PUBLIC_ROUTES.some(r => location.startsWith(r))) return;
+    // Only block if GPS photo is not verified (passkey is optional — not all devices support it)
+    if (status && !status.gpsPhotoVerified) {
+      navigate("/verify-account");
+    }
+  }, [user, status, location, navigate]);
+
+  return <>{children}</>;
+}
+
+function Router() {
+  return (
+    <VerificationGate>
+      <Switch>
+        <Route path="/" component={Home} />
+        <Route path="/onboarding" component={Onboarding} />
+        <Route path="/interview" component={Interview} />
+        <Route path="/profile" component={Profile} />
+        <Route path="/my-dashboard" component={ProfileDashboard} />
+        <Route path="/matches" component={Matches} />
+        <Route path="/chat/:matchId" component={Chat} />
+        <Route path="/games/:matchId" component={Games} />
+        <Route path="/activities" component={ActivityBoard} />
+        <Route path="/activity-board" component={ActivityBoard} />
+        <Route path="/community" component={Community} />
+        <Route path="/horoscope" component={Horoscope} />
+        <Route path="/concierge" component={Concierge} />
+        <Route path="/marketplace" component={Marketplace} />
+        <Route path="/payment-confirmation" component={PaymentConfirmation} />
+        <Route path="/bookings" component={Bookings} />
+        <Route path="/vendor" component={Vendor} />
+        <Route path="/partner-results" component={PartnerResults} />
+        <Route path="/couples" component={Couples} />
+        <Route path="/would-you-rather" component={WouldYouRather} />
+        <Route path="/wyr-challenge/:challengeId" component={WyrChallenge} />
+        <Route path="/wyr-challenge" component={WyrChallenge} />
+        <Route path="/pick-a-plan/:matchId" component={PickAPlan} />
+        <Route path="/campus/carroll" component={CampusWaitlist} />
+        <Route path="/campus" component={CampusPage} />
+        <Route path="/signup" component={SignUp} />
+        <Route path="/login" component={Login} />
+        <Route path="/forgot-password" component={ForgotPassword} />
+        <Route path="/reset-password" component={ResetPassword} />
+        <Route path="/verify" component={Verify} />
+        <Route path="/verify-account" component={AccountVerify} />
+        <Route path="/city/:citySlug" component={CityLanding} />
+        <Route path="/events/:activityId" component={EventDetail} />
+        <Route path="/trivia" component={TriviaGame} />
+        <Route path="/jeopardy" component={Jeopardy} />
+        <Route path="/trivia-pursuit" component={TriviaPursuit} />
+        <Route path="/finish-sentence" component={FinishSentence} />
+        <Route path="/bullgerdash/:matchId" component={Bullgerdash} />
+        <Route path="/bullgerdash" component={Bullgerdash} />
+        <Route path="/bullgerdash-room/:roomId" component={BullgerdashGroup} />
+        <Route path="/games-hub" component={GamesHub} />
+        <Route path="/games-hub/:gameId" component={GamesHub} />
+        <Route path="/social-games" component={SocialGames} />
+        <Route path="/sports" component={Sports} />
+        <Route path="/sports/live-scores" component={LiveScores} />
+        <Route path="/gym-buddy" component={GymBuddy} />
+        <Route path="/gym-buddy/:gymId" component={GymPage} />
+        <Route path="/gym/:gymId" component={GymPage} />
+        <Route path="/gym-pitch" component={GymPitch} />
+        <Route path="/my-workout" component={MyWorkout} />
+        <Route path="/sports/watch-party/:roomId" component={WatchParty} />
+        <Route path="/family" component={Family} />
+        <Route path="/trip-planner" component={TripPlanner} />
+        <Route path="/events" component={Events} />
+        <Route path={APP_ROUTES.notifications} component={Notifications} />
+        <Route path="/game-lobby" component={GameLobby} />
+        <Route path="/entertainment" component={Entertainment} />
+        <Route path="/shout-out" component={ShoutOut} />
+        <Route path="/refer" component={ShoutOut} />
+        <Route path="/safety" component={Safety} />
+        <Route path="/advertise" component={AdvertiseWithUs} />
+        <Route path="/admin/advertising" component={AdminAdvertising} />
+        <Route path="/admin/members" component={AdminMembers} />
+        <Route path="/admin" component={Admin} />
+        <Route path="/privacy" component={Privacy} />
+        <Route path="/developer-sync" component={SharedQuestionSync} />
+        <Route path="/404" component={NotFound} />
+        <Route component={NotFound} />
+      </Switch>
+    </VerificationGate>
+  );
+}
+
+function App() {
+  return (
+    <ErrorBoundary>
+      <ThemeProvider defaultTheme="light">
+        <TooltipProvider>
+          <Toaster />
+          <Navbar />
+          <Router />
+          <MobileBottomNav />
+          <FloatingInstallButton />
+        </TooltipProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
+  );
+}
+
+export default App;

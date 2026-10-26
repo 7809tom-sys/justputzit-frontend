@@ -1,0 +1,279 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: oklch(0.99 0.005 80);
+  --color-foreground: oklch(0.2 0.02 30);
+  --color-card: oklch(1 0 0);
+  --color-card-foreground: oklch(0.2 0.02 30);
+  --color-popover: oklch(1 0 0);
+  --color-popover-foreground: oklch(0.2 0.02 30);
+  --color-primary: oklch(0.65 0.2 35);
+  --color-primary-foreground: oklch(1 0 0);
+  --color-secondary: oklch(0.92 0.05 200);
+  --color-secondary-foreground: oklch(0.3 0.05 200);
+  --color-muted: oklch(0.95 0.01 80);
+  --color-muted-foreground: oklch(0.5 0.02 30);
+  --color-accent: oklch(0.88 0.1 130);
+  --color-accent-foreground: oklch(0.25 0.08 130);
+  --color-destructive: oklch(0.6 0.22 25);
+  --color-destructive-foreground: oklch(1 0 0);
+  --color-border: oklch(0.9 0.02 80);
+  --color-input: oklch(0.9 0.02 80);
+  --color-ring: oklch(0.65 0.2 35);
+
+  /* Just Putzit brand colors */
+  --color-sally-orange: oklch(0.72 0.2 45);
+  --color-sally-teal: oklch(0.72 0.14 195);
+  --color-singles: oklch(0.82 0.1 230);
+  --color-couples: oklch(0.85 0.1 155);
+  --color-community: oklch(0.88 0.12 75);
+  --color-warm-cream: oklch(0.97 0.02 80);
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-2xl: 2rem;
+  --radius: 0.75rem;
+
+  --font-sans: "Nunito", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Playfair Display", "Georgia", serif;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-display);
+  }
+}
+
+/* Custom utilities */
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+  }
+
+  .gradient-warm {
+    background: linear-gradient(135deg, oklch(0.97 0.03 60) 0%, oklch(0.95 0.04 200) 100%);
+  }
+
+  .gradient-sally {
+    background: linear-gradient(135deg, oklch(0.72 0.2 45) 0%, oklch(0.72 0.18 25) 100%);
+  }
+
+  .gradient-singles {
+    background: linear-gradient(135deg, oklch(0.88 0.08 230) 0%, oklch(0.92 0.06 250) 100%);
+  }
+
+  .gradient-couples {
+    background: linear-gradient(135deg, oklch(0.88 0.08 155) 0%, oklch(0.92 0.06 170) 100%);
+  }
+
+  .gradient-community {
+    background: linear-gradient(135deg, oklch(0.92 0.1 75) 0%, oklch(0.95 0.08 55) 100%);
+  }
+
+  .card-hover {
+    @apply transition-all duration-200;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px oklch(0 0 0 / 0.12);
+  }
+
+  .sally-glow {
+    box-shadow: 0 0 30px oklch(0.72 0.2 45 / 0.3);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .sally-new-trait {
+      animation: sally-trait-highlight 420ms cubic-bezier(0.23, 1, 0.32, 1) both;
+    }
+  }
+
+  @keyframes sally-trait-highlight {
+    0% {
+      opacity: 0;
+      transform: translateY(6px);
+      box-shadow: 0 0 0 0 oklch(0.62 0.18 300 / 0);
+    }
+    55% {
+      opacity: 1;
+      transform: translateY(0);
+      box-shadow: 0 0 0 5px oklch(0.62 0.18 300 / 0.12);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+      box-shadow: 0 0 0 0 oklch(0.62 0.18 300 / 0);
+    }
+  }
+
+  .btn-scale:active {
+    transform: scale(0.97);
+  }
+
+  .game-confetti {
+    position: absolute;
+    top: 1rem;
+    width: 0.5rem;
+    height: 0.85rem;
+    border-radius: 0.16rem;
+    opacity: 0.72;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .game-confetti {
+      animation: game-confetti-fall 1150ms cubic-bezier(0.23, 1, 0.32, 1) var(--confetti-delay) both;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .game-confetti {
+      display: none;
+    }
+  }
+
+  @keyframes game-confetti-fall {
+    0% { opacity: 0; transform: translate3d(0, -8px, 0) rotate(0deg); }
+    18% { opacity: 1; }
+    100% { opacity: 0.72; transform: translate3d(var(--confetti-x), 150px, 0) rotate(160deg); }
+  }
+}
+
+/* Flex min-width fix */
+.flex {
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Container */
+.container {
+  @apply mx-auto px-4;
+  max-width: 1200px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: oklch(0.95 0.01 80);
+}
+::-webkit-scrollbar-thumb {
+  background: oklch(0.8 0.05 80);
+  border-radius: 3px;
+}
+
+/* Animations */
+@keyframes calendar-toast-progress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+.animate-calendar-toast-progress {
+  animation: calendar-toast-progress 5s linear forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-calendar-toast-progress {
+    animation: none;
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 oklch(0.72 0.2 45 / 0.4); }
+  70% { box-shadow: 0 0 0 12px oklch(0.72 0.2 45 / 0); }
+  100% { box-shadow: 0 0 0 0 oklch(0.72 0.2 45 / 0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2s ease-in-out infinite;
+}
+
+/* Chat bubbles */
+.chat-bubble-sent {
+  background: linear-gradient(135deg, oklch(0.72 0.2 45), oklch(0.68 0.18 35));
+  color: white;
+  border-radius: 1.2rem 1.2rem 0.3rem 1.2rem;
+}
+
+.chat-bubble-received {
+  background: oklch(0.95 0.01 80);
+  color: oklch(0.2 0.02 30);
+  border-radius: 1.2rem 1.2rem 1.2rem 0.3rem;
+}
+
+/* Sally avatar */
+.sally-avatar {
+  background: linear-gradient(135deg, oklch(0.72 0.2 45), oklch(0.68 0.18 25));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: white;
+  font-weight: bold;
+}
+
+/* Game cards */
+.game-card {
+  background: white;
+  border-radius: 1.5rem;
+  box-shadow: 0 4px 24px oklch(0 0 0 / 0.08);
+  border: 2px solid oklch(0.92 0.03 80);
+  transition: all 0.2s ease;
+}
+
+.game-card:hover {
+  border-color: oklch(0.72 0.2 45);
+  box-shadow: 0 8px 32px oklch(0.72 0.2 45 / 0.15);
+}
+
+/* Progress bar */
+.interview-timer {
+  height: 6px;
+  border-radius: 3px;
+  background: oklch(0.9 0.02 80);
+  overflow: hidden;
+}
+
+.interview-timer-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, oklch(0.72 0.2 45), oklch(0.72 0.14 195));
+  transition: width 1s linear;
+}
+
+/* ── Voice call speaking indicator ─────────────────────────────────────────── */
+@keyframes soundbar {
+  from { transform: scaleY(0.4); opacity: 0.6; }
+  to   { transform: scaleY(1.4); opacity: 1; }
+}
