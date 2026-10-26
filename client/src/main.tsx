@@ -23,9 +23,13 @@ if (import.meta.env.PROD && !isApiUrlConfigured) {
   );
 }
 
+// Pages where being signed out is normal: redirecting from them would just reload the same page, forever.
+const AUTH_PAGES = ["/login", "/signup", "/forgot-password", "/reset-password"];
+
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;
   if (typeof window === "undefined") return;
+  if (AUTH_PAGES.some(page => window.location.pathname.startsWith(page))) return;
 
   const isUnauthorized = error.message === UNAUTHED_ERR_MSG;
 

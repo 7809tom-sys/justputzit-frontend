@@ -23,4 +23,16 @@ describe("frontend deploy configuration", () => {
     expect(main).toContain('includes("text/html")');
     expect(read("client/src/lib/supabase.ts")).toContain("export const isApiUrlConfigured");
   });
+
+  it("does not query notifications for signed-out visitors (a 401 there sends them to the login page)", () => {
+    const nav = read("client/src/components/MobileBottomNav.tsx");
+    expect(nav).toMatch(/notifications\.getAll\.useQuery\(undefined, \{\s*enabled: !!user,/);
+    expect(read("client/src/components/Navbar.tsx")).toContain("enabled: !shouldHide");
+  });
+
+  it("never redirects to the login page from an auth page (that reloads the page in a loop)", () => {
+    const main = read("client/src/main.tsx");
+    expect(main).toContain('const AUTH_PAGES = ["/login", "/signup", "/forgot-password", "/reset-password"]');
+    expect(main).toContain("AUTH_PAGES.some(page => window.location.pathname.startsWith(page))");
+  });
 });

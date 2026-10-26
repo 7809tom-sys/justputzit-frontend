@@ -39,7 +39,10 @@ export default function MobileBottomNav() {
   const [location] = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
 
+  // Notifications belong to a signed-in member; without this a signed-out visitor gets a 401 on every page
+  // and the global unauthorized handler sends them to the login page.
   const { data: notifications } = trpc.notifications.getAll.useQuery(undefined, {
+    enabled: !!user,
     refetchInterval: 30000,
   });
   const unreadCount = notifications?.filter((n) => !n.isRead).length ?? 0;
