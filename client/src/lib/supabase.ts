@@ -15,6 +15,9 @@ export const supabase = createClient(
 /** Base URL of the API. Empty means same origin (local development). */
 const API_URL = ((import.meta.env.VITE_API_URL as string | undefined) ?? "").replace(/\/+$/, "");
 
+/** False when the build has no VITE_API_URL, so API calls would go to the website itself. */
+export const isApiUrlConfigured = API_URL.length > 0;
+
 export const apiUrl = (path: string) => `${API_URL}${path}`;
 
 /** WebSocket URL for an API path, with the access token for the upgrade request. */

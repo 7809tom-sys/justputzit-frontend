@@ -6,13 +6,22 @@ import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
 import { getLoginUrl } from "./const";
-import { apiUrl, getAccessToken } from "./lib/supabase";
+import { apiUrl, getAccessToken, isApiUrlConfigured } from "./lib/supabase";
+import { loadAnalytics } from "./lib/analytics";
 import { enablePwaUpdateRefresh } from "./lib/pwaUpdateRefresh";
 import "./index.css";
 
 const queryClient = new QueryClient();
 
 enablePwaUpdateRefresh();
+loadAnalytics();
+
+if (import.meta.env.PROD && !isApiUrlConfigured) {
+  console.error(
+    "VITE_API_URL is not set for this build, so API calls go to this website instead of the API server. " +
+      "Set VITE_API_URL (for example https://api.justputzit.com) in the hosting environment and redeploy.",
+  );
+}
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;
@@ -49,6 +58,19 @@ const trpcClient = trpc.createClient({
       async headers() {
         const token = await getAccessToken();
         return token ? { Authorization: `Bearer ${token}` } : {};
+      },
+      async fetch(input, init) {
+        const response = await fetch(input, init);
+        // A single-page-app host answers unknown paths with index.html. Seeing that here means the request
+        // never reached the API; say so instead of failing later with a JSON parse error.
+        if ((response.headers.get("content-type") ?? "").includes("text/html")) {
+          throw new Error(
+            isApiUrlConfigured
+              ? "The API returned a web page instead of data. Check that VITE_API_URL points at the API server."
+              : "The API address is not configured (VITE_API_URL is missing in this build).",
+          );
+        }
+        return response;
       },
     }),
   ],
