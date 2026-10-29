@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Church, ExternalLink, HandHeart, Loader2, MapPin, ShieldCheck } from "lucide-react";
+import { Link } from "wouter";
 
 type DirectoryKind = "churches" | "help";
 
@@ -21,8 +22,9 @@ const DIRECTORY_TABS: Array<{ id: DirectoryKind; label: string; icon: typeof Chu
 const INITIAL_CONGREGATION_COUNT = 40;
 const CONGREGATION_INCREMENT = 40;
 
-function MapListingCard({ place, sourceLabel }: { place: { directoryId: string; source: "OpenStreetMap" | "MapTiler"; name: string; address: string; mapUrl: string; directionsUrl?: string; religion?: string; denomination?: string }; sourceLabel?: string }) {
+function MapListingCard({ place, sourceLabel, city, state }: { place: { directoryId: string; source: "OpenStreetMap" | "MapTiler"; name: string; address: string; mapUrl: string; directionsUrl?: string; religion?: string; denomination?: string }; sourceLabel?: string; city?: string; state?: string | null }) {
   const detailLabels = [place.religion, place.denomination].filter(Boolean);
+  const claimQuery = new URLSearchParams({ directoryId: place.directoryId, name: place.name, address: place.address, city: city ?? "", state: state ?? "" });
   return <article className="rounded-xl border border-gray-100 bg-white p-3 transition-colors hover:border-indigo-200 hover:bg-indigo-50/30">
     <div className="flex items-start justify-between gap-2">
       <div className="min-w-0">
@@ -35,6 +37,7 @@ function MapListingCard({ place, sourceLabel }: { place: { directoryId: string; 
     <div className="mt-3 flex flex-wrap gap-3 text-xs font-semibold text-primary">
       <a href={place.mapUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:underline">Public map record <ExternalLink className="h-3 w-3" /></a>
       {place.directionsUrl && <a href={place.directionsUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:underline">Directions <ExternalLink className="h-3 w-3" /></a>}
+      <Link href={`/claim?${claimQuery.toString()}`} className="inline-flex items-center gap-1 hover:underline">Claim this page</Link>
     </div>
   </article>;
 }
@@ -105,13 +108,13 @@ export function CommunityDirectoryPanel({ city, state, lat, lng }: CommunityDire
             <div>
               <div className="flex flex-wrap items-end justify-between gap-2"><div><h3 className="text-sm font-bold text-gray-900">Complete public congregation map inventory</h3><p className="mt-0.5 max-w-2xl text-xs leading-relaxed text-gray-500">{directory.data?.congregationCoverage?.note}</p></div><Badge variant="outline" className="border-indigo-100 bg-white text-indigo-700">{primaryCongregations.length} public record{primaryCongregations.length === 1 ? "" : "s"}</Badge></div>
               {directory.data?.congregationCoverage?.available === false && <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-900">The full map inventory is temporarily unavailable. The supplemental public map listings below may be incomplete; please try again later for comprehensive coverage.</div>}
-              {primaryCongregations.length > 0 ? <><div className="mt-2 grid gap-2 sm:grid-cols-2">{visibleCongregations.map((place) => <MapListingCard key={place.directoryId} place={place} />)}</div>{remainingCongregations > 0 && <div className="mt-3 flex justify-center"><Button type="button" variant="outline" className="rounded-full bg-white" onClick={() => setVisibleCongregationCount((count) => count + CONGREGATION_INCREMENT)}>Show {Math.min(CONGREGATION_INCREMENT, remainingCongregations)} more congregation{Math.min(CONGREGATION_INCREMENT, remainingCongregations) === 1 ? "" : "s"}</Button></div>}</> : <div className="mt-2 rounded-xl border border-dashed border-gray-200 bg-white/70 p-4 text-sm text-gray-600">No public congregation records came back yet. Try again shortly or search a nearby ZIP code.</div>}
-              {supplementalMapResults.length > 0 && <div className="mt-4 rounded-xl border border-gray-100 bg-white/70 p-3"><button type="button" className="flex w-full items-center justify-between gap-2 text-left text-xs font-semibold text-indigo-800" onClick={() => setShowSupplemental((shown) => !shown)} aria-expanded={showSupplemental}>Supplemental public map matches <span>{showSupplemental ? "Hide" : `Show ${supplementalMapResults.length}`}</span></button>{showSupplemental && <div className="mt-3 grid gap-2 sm:grid-cols-2">{supplementalMapResults.map((place) => <MapListingCard key={place.directoryId} place={place} sourceLabel="Supplemental Google Maps" />)}</div>}</div>}
+              {primaryCongregations.length > 0 ? <><div className="mt-2 grid gap-2 sm:grid-cols-2">{visibleCongregations.map((place) => <MapListingCard key={place.directoryId} place={place} city={city} state={state} />)}</div>{remainingCongregations > 0 && <div className="mt-3 flex justify-center"><Button type="button" variant="outline" className="rounded-full bg-white" onClick={() => setVisibleCongregationCount((count) => count + CONGREGATION_INCREMENT)}>Show {Math.min(CONGREGATION_INCREMENT, remainingCongregations)} more congregation{Math.min(CONGREGATION_INCREMENT, remainingCongregations) === 1 ? "" : "s"}</Button></div>}</> : <div className="mt-2 rounded-xl border border-dashed border-gray-200 bg-white/70 p-4 text-sm text-gray-600">No public congregation records came back yet. Try again shortly or search a nearby ZIP code.</div>}
+              {supplementalMapResults.length > 0 && <div className="mt-4 rounded-xl border border-gray-100 bg-white/70 p-3"><button type="button" className="flex w-full items-center justify-between gap-2 text-left text-xs font-semibold text-indigo-800" onClick={() => setShowSupplemental((shown) => !shown)} aria-expanded={showSupplemental}>Supplemental public map matches <span>{showSupplemental ? "Hide" : `Show ${supplementalMapResults.length}`}</span></button>{showSupplemental && <div className="mt-3 grid gap-2 sm:grid-cols-2">{supplementalMapResults.map((place) => <MapListingCard key={place.directoryId} place={place} sourceLabel="Supplemental Google Maps" city={city} state={state} />)}</div>}</div>}
             </div>
           ) : (
             <div>
               <div className="flex flex-wrap items-end justify-between gap-2"><div><h3 className="text-sm font-bold text-gray-900">{selectedTab.label} found in public map listings</h3><p className="mt-0.5 text-xs text-gray-500">{directory.data?.mapResults.length ?? 0} public listing{(directory.data?.mapResults.length ?? 0) === 1 ? "" : "s"} found for {city}.</p></div></div>
-              {(directory.data?.mapResults.length ?? 0) > 0 ? <div className="mt-2 grid gap-2 sm:grid-cols-2">{directory.data?.mapResults.map((place) => <MapListingCard key={place.directoryId} place={place} />)}</div> : <div className="mt-2 rounded-xl border border-dashed border-gray-200 bg-white/70 p-4 text-sm text-gray-600">No public map listings came back yet. Try a nearby ZIP code or widen the location in the city search.</div>}
+              {(directory.data?.mapResults.length ?? 0) > 0 ? <div className="mt-2 grid gap-2 sm:grid-cols-2">{directory.data?.mapResults.map((place) => <MapListingCard key={place.directoryId} place={place} city={city} state={state} />)}</div> : <div className="mt-2 rounded-xl border border-dashed border-gray-200 bg-white/70 p-4 text-sm text-gray-600">No public map listings came back yet. Try a nearby ZIP code or widen the location in the city search.</div>}
             </div>
           )}
 

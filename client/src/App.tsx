@@ -67,13 +67,15 @@ import MyWorkout from "@/pages/MyWorkout";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
 import SharedQuestionSync from "@/pages/SharedQuestionSync";
+import OrganizationClaim, { JoinOrganization, OrganizationClaimVerify, OrganizationWorkspace } from "@/pages/OrganizationClaim";
+import OrganizationClaimAdmin from "@/pages/OrganizationClaimAdmin";
 import { FloatingInstallButton } from "@/components/FloatingInstallButton";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
 
 // Routes that are allowed without account verification
-const PUBLIC_ROUTES = ["/login", "/signup", "/forgot-password", "/reset-password", "/verify", "/verify-account", "/404", "/city/", "/events/", "/profile", "/gym-pitch", "/privacy", "/terms"];
+const PUBLIC_ROUTES = ["/login", "/signup", "/forgot-password", "/reset-password", "/verify", "/verify-account", "/404", "/city/", "/events/", "/profile", "/gym-pitch", "/privacy", "/terms", "/claim", "/organization/", "/join/organization/"];
 
 /**
  * Verification gate — runs on every navigation for logged-in users.
@@ -167,6 +169,11 @@ function Router() {
         <Route path="/safety" component={Safety} />
         <Route path="/advertise" component={AdvertiseWithUs} />
         <Route path="/admin/developer-sync" component={SharedQuestionSync} />
+        <Route path="/admin/organization-claims" component={OrganizationClaimAdmin} />
+        <Route path="/claim/verify" component={OrganizationClaimVerify} />
+        <Route path="/claim" component={OrganizationClaim} />
+        <Route path="/organization/:claimId" component={OrganizationWorkspace} />
+        <Route path="/join/organization/:inviteCode" component={JoinOrganization} />
         <Route path="/admin/advertising" component={AdminAdvertising} />
         <Route path="/admin/members" component={AdminMembers} />
         <Route path="/admin" component={Admin} />

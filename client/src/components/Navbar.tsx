@@ -269,6 +269,11 @@ export default function Navbar() {
                       Developer sync
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin/organization-claims">
+                      Organization claims
+                    </Link>
+                  </DropdownMenuItem>
                 </>
               )}
               <DropdownMenuSeparator />
