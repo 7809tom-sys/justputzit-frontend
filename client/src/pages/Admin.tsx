@@ -643,6 +643,9 @@ export default function Admin() {
             <Link href="/admin/members">
               <Button variant="outline" size="sm" className="gap-2 rounded-full"><Users className="w-3.5 h-3.5" /> Administrators</Button>
             </Link>
+            <Link href="/admin/organization-claims">
+              <Button variant="outline" size="sm" className="gap-2 rounded-full">Organization claims</Button>
+            </Link>
             <Button
               variant="outline"
               size="sm"

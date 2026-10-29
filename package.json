@@ -6,8 +6,8 @@
   "private": true,
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "build:web": "vite build",
+    "build": "vite build && node scripts/assert-no-manus-dist.mjs",
+    "build:web": "vite build && node scripts/assert-no-manus-dist.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "format": "prettier --write ."

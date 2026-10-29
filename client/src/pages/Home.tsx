@@ -1065,7 +1065,7 @@ function LandingPage({ isAuthenticated = false }: { isAuthenticated?: boolean })
 
       <section className="gradient-warm py-20 text-center"><div className="container"><h2 className="font-display text-3xl font-bold text-foreground">Ready to meet somewhere real?</h2><p className="mx-auto mt-4 max-w-xl text-muted-foreground">Join free. Start with Sally, make connections with intention, and choose a local plan on your terms.</p><Button size="lg" className="mt-8 rounded-full gradient-primary text-white btn-scale" onClick={() => navigate(primaryAction.destination)}><Heart className="mr-2 h-5 w-5" />{isAuthenticated ? "Continue your setup" : "Join free today"}</Button></div></section>
 
-      <footer className="border-t border-border bg-muted/30 py-8"><div className="container flex flex-col gap-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between"><p>&copy; 2026 Just Putzit. All rights reserved.</p><div className="flex gap-6"><a href="/privacy" className="hover:text-foreground">Privacy Policy</a><a href="/safety" className="hover:text-foreground">Safety &amp; Trust</a></div></div></footer>
+      <footer className="border-t border-border bg-muted/30 py-8"><div className="container flex flex-col gap-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between"><p>&copy; 2026 Just Putzit. All rights reserved.</p><div className="flex gap-6"><a href="/privacy" className="hover:text-foreground">Privacy Policy</a><a href="/terms" className="hover:text-foreground">Terms of Service</a><a href="/safety" className="hover:text-foreground">Safety &amp; Trust</a></div></div></footer>
     </div>
   );
 }

@@ -264,6 +264,16 @@ export default function Navbar() {
                       Manage Partners
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin/developer-sync">
+                      Developer sync
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin/organization-claims">
+                      Organization claims
+                    </Link>
+                  </DropdownMenuItem>
                 </>
               )}
               <DropdownMenuSeparator />
@@ -277,6 +287,11 @@ export default function Navbar() {
               <DropdownMenuItem asChild>
                 <Link href="/privacy" className="text-xs text-muted-foreground">
                   Privacy Policy
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/terms" className="text-xs text-muted-foreground">
+                  Terms of Service
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={logout} className="text-destructive">

@@ -1,4 +1,6 @@
 import { Link } from "wouter";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
   CheckCircle2,
@@ -66,6 +68,24 @@ function ArchitectureNode({ icon: Icon, title, detail, accent = "cyan" }: { icon
 }
 
 export default function SharedQuestionSync() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <main className="grid min-h-screen place-items-center bg-[#07111f] text-slate-300">Checking access…</main>;
+  }
+
+  if (user?.role !== "admin") {
+    return (
+      <main className="grid min-h-screen place-items-center bg-background px-4">
+        <div className="max-w-sm text-center">
+          <h1 className="font-display text-2xl font-bold">Access Restricted</h1>
+          <p className="mb-6 mt-2 text-muted-foreground">This area is for Just Putzit administrators only.</p>
+          <Link href="/"><Button className="rounded-full">Go Home</Button></Link>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#07111f] text-slate-100">
       <section className="relative border-b border-white/10 bg-[radial-gradient(circle_at_15%_5%,rgba(34,211,238,.18),transparent_28%),radial-gradient(circle_at_85%_20%,rgba(139,92,246,.18),transparent_24%),linear-gradient(180deg,#0a1729_0%,#07111f_100%)]">
