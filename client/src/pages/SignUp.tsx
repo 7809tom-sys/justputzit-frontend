@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +25,7 @@ export default function SignUp() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [city, setCity] = useState("milwaukee");
   const [showPassword, setShowPassword] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -67,6 +69,7 @@ export default function SignUp() {
     if (!email.includes("@")) e.email = "Valid email required";
     if (password.length < 8) e.password = "Password must be at least 8 characters";
     if (password !== confirmPassword) e.confirmPassword = "Passwords don't match";
+    if (!agreedToTerms) e.terms = "Please agree to the Terms and Privacy Policy to create an account.";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -184,6 +187,21 @@ export default function SignUp() {
                   <Shield className="w-3 h-3" />
                   We'll verify you're actually here — no out-of-town fakes.
                 </p>
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-start gap-2">
+                  <Checkbox
+                    id="agree-terms"
+                    checked={agreedToTerms}
+                    onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
+                    aria-label="I agree to the Terms and Privacy Policy"
+                  />
+                  <Label htmlFor="agree-terms" className="text-sm font-normal leading-snug">
+                    I agree to the <Link href="/terms" className="text-orange-500 hover:text-orange-400 underline">Terms</Link> and <Link href="/privacy" className="text-orange-500 hover:text-orange-400 underline">Privacy Policy</Link>
+                  </Label>
+                </div>
+                {errors.terms && <p className="text-xs text-destructive">{errors.terms}</p>}
               </div>
 
               <Button
