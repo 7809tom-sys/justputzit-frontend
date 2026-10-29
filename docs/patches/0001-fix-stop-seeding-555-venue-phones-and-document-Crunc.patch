@@ -1,0 +1,134 @@
+From e8eac4b4da5753409d62e2f639625eac8a1705d1 Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursoragent@cursor.com>
+Date: Thu, 29 Oct 2026 13:14:09 +0000
+Subject: [PATCH 1/2] fix: stop seeding 555 venue phones and document Crunch
+ partner cleanup
+
+Set the two fictional venue phones to null and add hand-run SQL that clears 555 venue phones and marks the four seeded Crunch gyms as non-partners. Neither SQL file is executed.
+---
+ hand-run/null-555-venue-phones.sql     | 12 ++++++++
+ hand-run/unset-crunch-gym-partners.sql | 23 +++++++++++++++
+ seed-local-venues.mjs                  |  4 +--
+ server/handRunSql.test.ts              | 39 ++++++++++++++++++++++++++
+ 4 files changed, 76 insertions(+), 2 deletions(-)
+ create mode 100644 hand-run/null-555-venue-phones.sql
+ create mode 100644 hand-run/unset-crunch-gym-partners.sql
+ create mode 100644 server/handRunSql.test.ts
+
+diff --git a/hand-run/null-555-venue-phones.sql b/hand-run/null-555-venue-phones.sql
+new file mode 100644
+index 0000000..023b77a
+--- /dev/null
++++ b/hand-run/null-555-venue-phones.sql
+@@ -0,0 +1,12 @@
++-- Hand-run only. Do not execute this from the migration runner, deploy, or CI.
++-- Venue records are stored in venue_partners. There is no table named venues.
++-- This clears fictional 555 exchange numbers already stored on those rows.
++-- Review the SELECT before the UPDATE, then run the UPDATE yourself.
++
++SELECT id, name, city, phone
++FROM venue_partners
++WHERE phone REGEXP '555[-. ]?[0-9]{4}';
++
++UPDATE venue_partners
++SET phone = NULL
++WHERE phone REGEXP '555[-. ]?[0-9]{4}';
+diff --git a/hand-run/unset-crunch-gym-partners.sql b/hand-run/unset-crunch-gym-partners.sql
+new file mode 100644
+index 0000000..999a165
+--- /dev/null
++++ b/hand-run/unset-crunch-gym-partners.sql
+@@ -0,0 +1,23 @@
++-- Hand-run only. Do not execute this from the migration runner, deploy, or CI.
++-- The four seeded Crunch Fitness gyms are not Just Putzit partners.
++-- Review the SELECT before the UPDATE, then run the UPDATE yourself.
++
++SELECT id, name, city, is_partner, partner_tier
++FROM gyms
++WHERE id IN (30001, 30002, 30003, 30004)
++   OR name IN (
++     'Crunch Fitness - Waukesha',
++     'Crunch Fitness - Brookfield',
++     'Crunch Fitness - West Allis',
++     'Crunch Fitness - Wauwatosa'
++   );
++
++UPDATE gyms
++SET is_partner = 0
++WHERE id IN (30001, 30002, 30003, 30004)
++  AND name IN (
++    'Crunch Fitness - Waukesha',
++    'Crunch Fitness - Brookfield',
++    'Crunch Fitness - West Allis',
++    'Crunch Fitness - Wauwatosa'
++  );
+diff --git a/seed-local-venues.mjs b/seed-local-venues.mjs
+index 09c055d..4020c5b 100644
+--- a/seed-local-venues.mjs
++++ b/seed-local-venues.mjs
+@@ -96,7 +96,7 @@ const waukeshaVenues = [
+     city: "Waukesha",
+     latitude: "43.0117",
+     longitude: "-88.2315",
+-    phone: "(262) 555-0199",
++    phone: null,
+     website: "https://www.escaperoom.com",
+     contactEmail: "waukesha@escaperoom.com",
+     isFeatured: false,
+@@ -109,7 +109,7 @@ const waukeshaVenues = [
+     city: "Waukesha",
+     latitude: "43.0117",
+     longitude: "-88.2315",
+-    phone: "(262) 555-0142",
++    phone: null,
+     website: "https://cafecora.com",
+     contactEmail: "hello@cafecora.com",
+     isFeatured: false,
+diff --git a/server/handRunSql.test.ts b/server/handRunSql.test.ts
+new file mode 100644
+index 0000000..0048149
+--- /dev/null
++++ b/server/handRunSql.test.ts
+@@ -0,0 +1,39 @@
++import { readFileSync } from "node:fs";
++import { resolve } from "node:path";
++import { describe, expect, it } from "vitest";
++
++describe("hand-run data corrections", () => {
++  it("stops seeding fictional 555 venue phones", () => {
++    const seed = readFileSync(resolve(__dirname, "../seed-local-venues.mjs"), "utf8");
++    expect(seed).not.toContain("555-0199");
++    expect(seed).not.toContain("555-0142");
++    expect(seed).toContain('name: "Escape the Room Waukesha"');
++    expect(seed).toContain('name: "Cafe Corazón — Waukesha"');
++    expect(seed).toMatch(/Escape the Room Waukesha[\s\S]*phone: null/);
++    expect(seed).toMatch(/Cafe Corazón — Waukesha[\s\S]*phone: null/);
++  });
++
++  it("keeps the 555-phone and Crunch partner corrections out of automatic migrations", () => {
++    const phones = readFileSync(resolve(__dirname, "../hand-run/null-555-venue-phones.sql"), "utf8");
++    const crunch = readFileSync(resolve(__dirname, "../hand-run/unset-crunch-gym-partners.sql"), "utf8");
++    const migrate = readFileSync(resolve(__dirname, "../migration/migrate.ts"), "utf8");
++
++    expect(phones).toContain("Hand-run only");
++    expect(phones).toContain("UPDATE venue_partners");
++    expect(phones).toContain("SET phone = NULL");
++    expect(phones).toContain("555[-. ]?[0-9]{4}");
++    expect(phones.toUpperCase()).not.toContain("DROP ");
++
++    expect(crunch).toContain("Hand-run only");
++    expect(crunch).toContain("SET is_partner = 0");
++    expect(crunch).toContain("Crunch Fitness - Waukesha");
++    expect(crunch).toContain("Crunch Fitness - Brookfield");
++    expect(crunch).toContain("Crunch Fitness - West Allis");
++    expect(crunch).toContain("Crunch Fitness - Wauwatosa");
++    expect(crunch.toUpperCase()).not.toContain("DROP ");
++
++    expect(migrate).toContain("/^\\d{4}_.+\\.sql$/");
++    expect("hand-run/null-555-venue-phones.sql").not.toMatch(/^\d{4}_.+\.sql$/);
++    expect("hand-run/unset-crunch-gym-partners.sql").not.toMatch(/^\d{4}_.+\.sql$/);
++  });
++});
+-- 
+2.43.0
+
