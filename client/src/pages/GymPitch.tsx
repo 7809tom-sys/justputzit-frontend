@@ -1,7 +1,7 @@
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Users, Calendar, Dumbbell, TrendingUp, Star, Crown, ChevronRight, Mail } from "lucide-react";
+import { CheckCircle, Users, Calendar, Dumbbell, TrendingUp, Star, Crown, ChevronRight, Mail, Phone } from "lucide-react";
 
 const TIERS = [
   {
@@ -277,6 +277,12 @@ export default function GymPitch() {
               className="inline-flex items-center justify-center gap-2 bg-white text-orange-700 font-bold text-base px-7 py-3 rounded-full shadow-xl hover:bg-orange-50 transition-all active:scale-95"
             >
               <Mail className="w-4 h-4" /> Email Us
+            </a>
+            <a
+              href="tel:+12622213103"
+              className="inline-flex items-center justify-center gap-2 bg-white/15 border border-white/30 text-white font-semibold text-base px-7 py-3 rounded-full hover:bg-white/25 transition-all"
+            >
+              <Phone className="w-4 h-4" /> Call Us
             </a>
           </div>
           <p className="text-white/50 text-xs mt-6">

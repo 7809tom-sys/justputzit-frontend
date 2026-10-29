@@ -27,6 +27,8 @@ describe("public review fixes", () => {
     expect(terms).toContain("Limitation of liability");
     expect(terms).toContain("State of Wisconsin");
     expect(terms).toContain("support@justputzit.com");
+    expect(terms).toContain("tel:+12622213103");
+    expect(terms).toContain("(262) 221-3103");
     expect(navbar).toContain('href="/terms"');
     expect(home).toContain('href="/terms"');
     expect(safety).toContain('href="/terms"');
@@ -36,12 +38,13 @@ describe("public review fixes", () => {
     expect(signup).toContain("agreedToTerms");
   });
 
-  it("removes the fictional gym phone and the Crunch partner claim", () => {
+  it("uses the owner phone and keeps the Crunch partner claim off the gym pitch", () => {
     const pitch = readFileSync(resolve(root, "client/src/pages/GymPitch.tsx"), "utf8");
     expect(pitch).toContain("gyms@justputzit.com");
     expect(pitch).toContain("Local gym partners");
+    expect(pitch).toContain('href="tel:+12622213103"');
+    expect(pitch).toContain("Call Us");
     expect(pitch).not.toContain("tel:+12625550100");
-    expect(pitch).not.toContain("Call Us");
     expect(pitch).not.toContain("Crunch");
   });
 

@@ -83,6 +83,7 @@ export default function Terms() {
             <div className="mt-3 rounded-lg border border-border bg-muted/50 p-4">
               <p className="font-semibold text-foreground">Just Putzit</p>
               <p className="text-muted-foreground">Email: support@justputzit.com</p>
+              <p className="text-muted-foreground">Phone: <a href="tel:+12622213103">(262) 221-3103</a></p>
               <p className="text-muted-foreground">Website: www.justputzit.com</p>
             </div>
           </section>
