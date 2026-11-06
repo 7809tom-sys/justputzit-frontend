@@ -15,7 +15,7 @@ interface SEOOptions {
   jsonLd?: object;
 }
 
-const DEFAULT_OG_IMAGE = "https://justputzit.com/brand/icon-192_52214e91.png";
+const DEFAULT_OG_IMAGE = "https://justputzit.com/brand/just-putzit-og-image_b5de2dfe.png";
 const SITE_NAME = "Just Putzit";
 
 function setMeta(name: string, content: string, attr: "name" | "property" = "name") {

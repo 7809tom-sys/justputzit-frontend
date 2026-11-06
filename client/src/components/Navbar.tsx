@@ -45,10 +45,10 @@ export default function Navbar() {
         {/* Logo */}
         <Link href="/" className="flex shrink-0 items-center no-underline">
           <img
-            src="/brand/justputzit-logo-transparent_2e545ffa.png"
+            src="/brand/justputzit-logo-transparent_def33678.png"
             alt="Just Putzit"
-            className="h-10 w-auto object-contain sm:h-11"
-            style={{ maxWidth: 136 }}
+            className="h-11 w-auto object-contain"
+            style={{ maxWidth: 64 }}
           />
         </Link>
 

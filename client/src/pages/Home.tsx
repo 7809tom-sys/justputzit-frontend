@@ -1022,7 +1022,7 @@ function LandingPage({ isAuthenticated = false }: { isAuthenticated?: boolean })
         <div className="pointer-events-none absolute -left-20 top-24 h-72 w-72 rounded-full bg-orange-200/30 blur-3xl" />
         <div className="pointer-events-none absolute -right-20 bottom-0 h-80 w-80 rounded-full bg-teal-200/35 blur-3xl" />
         <div className="container relative flex items-center justify-between py-5">
-          <img src="/brand/justputzit-logo-transparent_2e545ffa.png" alt="Just Putzit" className="h-10 w-auto object-contain" />
+          <img src="/brand/justputzit-logo-transparent_def33678.png" alt="Just Putzit" className="h-11 w-auto object-contain sm:h-12" />
           <div className="flex items-center gap-2 sm:gap-3">
             {!isAuthenticated && <Button variant="ghost" size="sm" onClick={() => navigate("/login")}>Sign in</Button>}
             <Button size="sm" className="rounded-full gradient-primary text-white" onClick={() => navigate(primaryAction.destination)}>{primaryAction.label}</Button>
