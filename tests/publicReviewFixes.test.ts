@@ -1,6 +1,4 @@
-import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -48,19 +46,17 @@ describe("public review fixes", () => {
     expect(pitch).not.toContain("Crunch");
   });
 
-  it("fails the build when dist/__manus__ is present", () => {
+  it("builds without the retired Manus artifacts", () => {
     const pkg = readFileSync(resolve(root, "package.json"), "utf8");
-    expect(pkg).toContain("vite build && node scripts/assert-no-manus-dist.mjs");
+    expect(pkg).toContain('"build:web": "vite build"');
+    expect(pkg).not.toContain("assert-no-manus-dist");
+    expect(pkg).not.toContain("@builder.io/vite-plugin-jsx-loc");
 
-    const script = resolve(root, "scripts/assert-no-manus-dist.mjs");
-    execFileSync(process.execPath, [script], { cwd: root });
+    expect(existsSync(resolve(root, "client/src/components/ManusDialog.tsx"))).toBe(false);
+    expect(existsSync(resolve(root, "scripts/assert-no-manus-dist.mjs"))).toBe(false);
 
-    const fixture = mkdtempSync(resolve(tmpdir(), "manus-dist-"));
-    mkdirSync(resolve(fixture, "dist/__manus__"), { recursive: true });
-    try {
-      expect(() => execFileSync(process.execPath, [script], { cwd: fixture, stdio: "pipe" })).toThrow();
-    } finally {
-      rmSync(fixture, { recursive: true, force: true });
-    }
+    const vite = readFileSync(resolve(root, "vite.config.ts"), "utf8");
+    expect(vite).not.toContain("jsxLocPlugin");
+    expect(vite).not.toContain("manus.computer");
   });
 });

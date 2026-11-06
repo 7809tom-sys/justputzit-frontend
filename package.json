@@ -6,8 +6,8 @@
   "private": true,
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/assert-no-manus-dist.mjs",
-    "build:web": "vite build && node scripts/assert-no-manus-dist.mjs",
+    "build": "vite build",
+    "build:web": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "format": "prettier --write ."
@@ -68,7 +68,6 @@
     "wouter": "^3.3.5"
   },
   "devDependencies": {
-    "@builder.io/vite-plugin-jsx-loc": "^0.1.1",
     "@tailwindcss/vite": "^4.1.3",
     "@types/node": "^24.7.0",
     "@types/react": "^19.2.1",

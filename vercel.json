@@ -5,9 +5,10 @@
   "buildCommand": "pnpm build:web",
   "outputDirectory": "dist/public",
   "rewrites": [
-    { "source": "/manus-storage/:path*", "destination": "https://REPLACE-WITH-RAILWAY-DOMAIN/manus-storage/:path*" },
-    { "source": "/sitemap.xml", "destination": "https://REPLACE-WITH-RAILWAY-DOMAIN/sitemap.xml" },
-    { "source": "/robots.txt", "destination": "https://REPLACE-WITH-RAILWAY-DOMAIN/robots.txt" },
+    { "source": "/storage/(.*)", "destination": "https://justputzit-backend-production.up.railway.app/manus-storage/$1" },
+    { "source": "/manus-storage/(.*)", "destination": "https://justputzit-backend-production.up.railway.app/manus-storage/$1" },
+    { "source": "/sitemap.xml", "destination": "https://justputzit-backend-production.up.railway.app/sitemap.xml" },
+    { "source": "/robots.txt", "destination": "https://justputzit-backend-production.up.railway.app/robots.txt" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
