@@ -9,6 +9,7 @@ import { MapView, addMarker, type MapInstance, type MapMarker } from "@/componen
 import { directionsUrl, searchNearbyPlaces } from "@/lib/maptiler";
 import { LocalVenueBanner } from "@/components/LocalVenueBanner";
 import { useUserCity } from "@/hooks/useUserCity";
+import { useMapCenter } from "@/hooks/useMapCenter";
 import { useLocation } from "wouter";
 import { LocationOverrideControl } from "@/components/LocationOverrideControl";
 import { formatMilesAway, haversineDistanceMiles } from "@shared/geo";
@@ -36,6 +37,9 @@ const ACTIVITY_TYPES = [
   { label: "Museums", value: "museum" },
 ];
 
+/** City-level zoom for the selected city and for a GPS fix (close enough to see the neighborhood). */
+const MAP_CENTER_ZOOM = 13;
+
 export default function Activities() {
   const [, navigate] = useLocation();
   const [places, setPlaces] = useState<Place[]>([]);
@@ -62,6 +66,15 @@ export default function Activities() {
       ? { lat: Number(profile?.gpsVerifiedLat), lng: Number(profile?.gpsVerifiedLng) }
       : null;
   const updateLocation = trpc.profile.update.useMutation();
+
+  // The map opens on the member's selected city (not an unrelated default), then follows a GPS fix.
+  const mapCenter = useMapCenter({
+    city: detectedCity?.city ?? profile?.city,
+    state: detectedCity?.state ?? profile?.state,
+    lat: detectedCity?.lat ?? (trustedLocation ? Number(profile?.gpsVerifiedLat) : undefined),
+    lng: detectedCity?.lng ?? (trustedLocation ? Number(profile?.gpsVerifiedLng) : undefined),
+    prefer: "coordinates",
+  });
   const { data: featuredPartners = [] } = trpc.advertising.getFeaturedPartners.useQuery(
     { city: profile?.city || undefined },
     { enabled: true, staleTime: 60_000 }
@@ -101,14 +114,15 @@ export default function Activities() {
 
   const handleMapReady = (map: MapInstance) => {
     mapRef.current = map;
-    if (trustedLocation) {
-      setUserLocation(trustedLocation);
-      map.setCenter(trustedLocation);
-      map.setZoom(14);
-      searchNearby(map, trustedLocation, activeType);
-    }
+    map.setCenter({ lat: mapCenter.lat, lng: mapCenter.lng });
+    map.setZoom(MAP_CENTER_ZOOM);
+    setUserLocation({ lat: mapCenter.lat, lng: mapCenter.lng });
+    searchNearby(map, { lat: mapCenter.lat, lng: mapCenter.lng }, activeType);
     if (!navigator.geolocation) {
-      if (!trustedLocation) setLocationError("Geolocation is not supported by your browser.");
+      if (!trustedLocation) {
+        // No GPS support: still show the member's selected city rather than an empty map.
+        setLocationError(`Geolocation is not supported by your browser. Showing venues near ${mapCenter.label}.`);
+      }
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -116,7 +130,7 @@ export default function Activities() {
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setUserLocation(loc);
         map.setCenter(loc);
-        map.setZoom(14);
+        map.setZoom(MAP_CENTER_ZOOM);
         // User marker
         addMarker(map, { lat: loc.lat, lng: loc.lng, label: "You are here", color: "#2563eb" });
         updateLocation.mutate({ latitude: String(loc.lat), longitude: String(loc.lng) });
@@ -127,19 +141,25 @@ export default function Activities() {
           setLocationError(null);
           return;
         }
-        setLocationError("Location access denied. Please allow location to see nearby activities.");
+        // Permission denied: the selected city is already showing real local venues.
+        setLocationError(`Location access denied. Showing venues near ${mapCenter.label}.`);
       },
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 300000 },
     );
   };
 
+  // Follow the selected city: MapView moves the map, and the venue search re-runs from the new center.
+  const lastSearchedCenter = useRef(`${mapCenter.lat},${mapCenter.lng}`);
   useEffect(() => {
-    if (!mapRef.current || userLocation || !trustedLocation) return;
-    setUserLocation(trustedLocation);
-    mapRef.current.setCenter(trustedLocation);
-    mapRef.current.setZoom(14);
-    searchNearby(mapRef.current, trustedLocation, activeType);
-  }, [trustedLocation?.lat, trustedLocation?.lng, userLocation, activeType]);
+    const map = mapRef.current;
+    if (!map) return;
+    const key = `${mapCenter.lat},${mapCenter.lng}`;
+    if (lastSearchedCenter.current === key) return;
+    lastSearchedCenter.current = key;
+    const center = { lat: mapCenter.lat, lng: mapCenter.lng };
+    setUserLocation(center);
+    searchNearby(map, center, activeType);
+  }, [mapCenter.lat, mapCenter.lng, activeType]);
 
   const handleTypeChange = (type: string) => {
     setActiveType(type);
@@ -255,8 +275,8 @@ export default function Activities() {
           <div className="bg-white rounded-3xl shadow-sm overflow-hidden">
             <MapView
               className="h-96 lg:h-[480px]"
-              initialCenter={{ lat: 39.8283, lng: -98.5795 }}
-              initialZoom={4}
+              center={mapCenter}
+              zoom={MAP_CENTER_ZOOM}
               onMapReady={handleMapReady}
             />
           </div>
