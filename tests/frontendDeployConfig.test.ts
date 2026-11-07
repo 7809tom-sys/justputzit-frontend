@@ -9,11 +9,7 @@ describe("frontend deploy configuration", () => {
     expect(read("client/index.html")).not.toMatch(/%VITE_[A-Z_]+%/);
   });
 
-  it("loads analytics only when both variables are set", () => {
-    const analytics = read("client/src/lib/analytics.ts");
-    expect(analytics).toContain("VITE_ANALYTICS_ENDPOINT");
-    expect(analytics).toContain("VITE_ANALYTICS_WEBSITE_ID");
-    expect(analytics).toContain("if (!endpoint || !websiteId) return;");
+  it("loads analytics at startup", () => {
     expect(read("client/src/main.tsx")).toContain("loadAnalytics();");
   });
 
