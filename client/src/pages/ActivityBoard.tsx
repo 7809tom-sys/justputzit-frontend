@@ -10,8 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Calendar as CalendarWidget } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { MapPin, Calendar, CalendarDays, List, Users, Search, CheckCircle, BookOpen, GraduationCap, Newspaper, ExternalLink, Plus, BellRing, ShieldCheck, Trophy, Megaphone, Bookmark, BookmarkCheck, Share2, SlidersHorizontal, ChevronDown, Heart, Sparkles, ArrowRight } from "lucide-react";
-import { MapView, addMarker, type MapInstance } from "@/components/Map";
-import { searchNearbyPlaces } from "@/lib/maptiler";
+import { MapView, addMarker, type MapInstance, type MapMarker } from "@/components/Map";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { LocalVenueBanner } from "@/components/LocalVenueBanner";
@@ -19,6 +18,7 @@ import { CommunityDirectoryPanel } from "@/components/CommunityDirectoryPanel";
 import { LocationOverrideControl } from "@/components/LocationOverrideControl";
 import { useUserCity } from "@/hooks/useUserCity";
 import { formatMilesAway, haversineDistanceMiles } from "@shared/geo";
+import { getActivityMapCenter, getActivityMapPins, getActivityMapZoom } from "@shared/activityMapPins";
 import { filterPersonalizedRecommendations, getRecommendationCategories, type RecommendationSort, type RecommendationTimeWindow } from "@/lib/personalizedRecommendationFilters";
 
 const CATEGORIES = [
@@ -126,6 +126,8 @@ export default function ActivityBoard() {
   const [communityCategory, setCommunityCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [mapReady, setMapReady] = useState(false);
+  const mapInstanceRef = useRef<MapInstance | null>(null);
+  const markersRef = useRef<MapMarker[]>([]);
   const [activeTab, setActiveTab] = useState<"activities" | "community">(() =>
     new URLSearchParams(window.location.search).get("tab") === "community" ? "community" : "activities",
   );
@@ -350,20 +352,8 @@ export default function ActivityBoard() {
   }
 
   const handleMapReady = useCallback((map: MapInstance) => {
+    mapInstanceRef.current = map;
     setMapReady(true);
-    const center = map.getCenter();
-    const types = ["library", "bowling_alley", "movie_theater", "restaurant", "park", "gym", "spa"];
-    types.forEach(type => {
-      searchNearbyPlaces({ lat: center.lat, lng: center.lng }, type, { radiusMeters: 5000, max: 3 })
-        .then(places => {
-          places.forEach(place => {
-            addMarker(map, { lat: place.lat, lng: place.lng, label: place.name, color: "#3b82f6" });
-          });
-        })
-        .catch(() => {
-          // Markers are a nicety; the board works without them.
-        });
-    });
   }, []);
 
   const filteredActivities = activities?.filter(a =>
@@ -406,6 +396,49 @@ export default function ActivityBoard() {
     const matchesSource = !activeSourceFilter || activeSourceFilter.includes(src);
     return matchesSearch && matchesCampus && matchesSource;
   });
+
+  // Pins come from what the board is actually showing — the listed activities and community events at
+  // their real venues — rather than a generic nearby-place search, which plotted unrelated businesses.
+  const mapPins = useMemo(
+    () =>
+      getActivityMapPins(
+        (filteredActivities ?? []) as Array<{ id: number; title?: string | null; venueLat?: number | string | null; venueLng?: number | string | null }>,
+        (filteredCommunity ?? []) as Array<{ id: number | string; title?: string | null; lat?: number | string | null; lng?: number | string | null }>,
+        { center: userLat !== undefined && userLng !== undefined ? { lat: userLat, lng: userLng } : null },
+      ),
+    [filteredActivities, filteredCommunity, userLat, userLng],
+  );
+
+  // Only fall back to the viewer's own coordinates when we actually know them.
+  const mapFallbackCenter = userLat !== undefined && userLng !== undefined ? { lat: userLat, lng: userLng } : null;
+  const mapCenter = useMemo(() => getActivityMapCenter(mapPins, mapFallbackCenter), [mapPins, mapFallbackCenter]);
+  const mapZoom = useMemo(() => getActivityMapZoom(mapPins, Boolean(mapFallbackCenter)), [mapPins, mapFallbackCenter]);
+
+  // Keep the markers in step with the filtered list, so the map never shows something the list does not.
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+    mapPins.forEach(pin => {
+      markersRef.current.push(
+        addMarker(map, {
+          lat: pin.lat,
+          lng: pin.lng,
+          label: pin.title,
+          color: pin.kind === "event" ? "#0f766e" : "#3b82f6",
+        }),
+      );
+    });
+  }, [mapPins, mapReady]);
+
+  useEffect(
+    () => () => {
+      markersRef.current.forEach(marker => marker.remove());
+      markersRef.current = [];
+    },
+    [],
+  );
 
   const sortedCommunity = useMemo(() => [...filteredCommunity].sort((a: any, b: any) => {
     if (communitySort === "trending") {
@@ -1171,10 +1204,27 @@ export default function ActivityBoard() {
                   <MapPin className="w-4 h-4 text-primary" />
                   Activities Near You
                 </h3>
-                <p className="text-xs text-gray-500 mt-1">Powered by Google Maps</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {mapPins.length > 0
+                    ? `${mapPins.length} ${mapPins.length === 1 ? "place" : "places"} on the map${userCity ? ` near ${userCity.split(",")[0].trim()}` : ""} · Powered by MapTiler`
+                    : "Powered by MapTiler"}
+                </p>
               </div>
               <div className="h-64">
-                <MapView onMapReady={handleMapReady} className="w-full h-full" />
+                <MapView
+                  onMapReady={handleMapReady}
+                  className="w-full h-full"
+                  center={mapCenter}
+                  zoom={mapZoom}
+                  emptyState={
+                    <div className="px-4 text-center text-xs text-gray-500">
+                      <MapPin className="mx-auto mb-2 h-5 w-5 text-primary" />
+                      {userCity
+                        ? `We do not have map locations for activities near ${userCity.split(",")[0].trim()} yet.`
+                        : "Set your city to see activities on the map."}
+                    </div>
+                  }
+                />
               </div>
             </div>
 
