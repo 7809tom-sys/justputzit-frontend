@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Calendar as CalendarWidget } from "@/components/ui/calendar";
 import { toast } from "sonner";
-import { MapPin, Calendar, CalendarDays, List, Users, Search, CheckCircle, BookOpen, GraduationCap, Newspaper, ExternalLink, Plus, BellRing, ShieldCheck, Trophy, Megaphone, Bookmark, BookmarkCheck, Share2, SlidersHorizontal, ChevronDown, Heart, Sparkles, ArrowRight } from "lucide-react";
+import { MapPin, Calendar, CalendarDays, List, Users, Search, CheckCircle, BookOpen, GraduationCap, Newspaper, ExternalLink, Plus, BellRing, ShieldCheck, Trophy, Megaphone, Bookmark, BookmarkCheck, Share2, SlidersHorizontal, ChevronDown, Heart, Sparkles, ArrowRight, Compass } from "lucide-react";
 import { MapView, addMarker, type MapInstance } from "@/components/Map";
 import { searchNearbyPlaces } from "@/lib/maptiler";
 import { Link, useLocation } from "wouter";
@@ -20,6 +20,7 @@ import { LocationOverrideControl } from "@/components/LocationOverrideControl";
 import { useUserCity } from "@/hooks/useUserCity";
 import { formatMilesAway, haversineDistanceMiles } from "@shared/geo";
 import { filterPersonalizedRecommendations, getRecommendationCategories, type RecommendationSort, type RecommendationTimeWindow } from "@/lib/personalizedRecommendationFilters";
+import { ACTIVITY_IDEAS } from "@shared/activityIdeas";
 
 const CATEGORIES = [
   { id: "all", label: "All Activities", emoji: "✨" },
@@ -545,6 +546,11 @@ export default function ActivityBoard() {
           />
         </div>
 
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-teal-100 bg-teal-50/60 px-4 py-3">
+          <p className="text-sm text-gray-700"><span className="font-semibold text-teal-900">Not sure what to do?</span> Browse {ACTIVITY_IDEAS.length} concrete plans — free walks, bowling, trivia, classes, and seasonal outings — with real venues nearby.</p>
+          <Button asChild size="sm" variant="outline" className="rounded-full border-teal-200 bg-white text-xs"><Link href="/things-to-do">Things to Do <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link></Button>
+        </div>
+
         {useRadiusQuery && (
           <label className="mb-5 inline-flex items-center gap-2 rounded-xl border border-primary/15 bg-primary/5 px-3 py-2 text-sm text-gray-700">
             <MapPin className="h-4 w-4 text-primary" />
@@ -850,6 +856,10 @@ export default function ActivityBoard() {
                     <p className="text-gray-500 mb-6 max-w-sm mx-auto">
                       No activities have been added to your area yet. Check back soon — Just Putzit is growing fast!
                     </p>
+                    <div className="mb-6 flex flex-wrap justify-center gap-2">
+                      <Button asChild size="sm" className="rounded-full"><Link href="/things-to-do"><Compass className="mr-1.5 h-4 w-4" /> {ACTIVITY_IDEAS.length} things to do</Link></Button>
+                      <Button asChild size="sm" variant="outline" className="rounded-full"><Link href="/entertainment">Concerts & showtimes</Link></Button>
+                    </div>
                     <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto text-sm text-gray-600">
                       {[
                         { emoji: "🎳", text: "Bowling nights" },
@@ -1171,7 +1181,7 @@ export default function ActivityBoard() {
                   <MapPin className="w-4 h-4 text-primary" />
                   Activities Near You
                 </h3>
-                <p className="text-xs text-gray-500 mt-1">Powered by Google Maps</p>
+                <p className="text-xs text-gray-500 mt-1">Powered by MapTiler</p>
               </div>
               <div className="h-64">
                 <MapView onMapReady={handleMapReady} className="w-full h-full" />

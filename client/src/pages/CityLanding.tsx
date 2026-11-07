@@ -7,12 +7,13 @@
  *   "things to do in Jackson Mississippi"
  *   "meet people in Jackson MS"
  */
-import { useParams, useLocation } from "wouter";
+import { useParams, useLocation, Link } from "wouter";
 import { useSEO } from "@/hooks/useSEO";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Heart, MapPin, Shield, Sparkles, Users, Star, ChevronRight, Calendar } from "lucide-react";
 import { getLoginUrl } from "@/const";
+import { ACTIVITY_IDEAS, seasonForMonth } from "@shared/activityIdeas";
 
 // ── City data ─────────────────────────────────────────────────────────────────
 interface CityData {
@@ -104,10 +105,20 @@ function buildGenericCity(slug: string): CityData {
   };
 }
 
+/** Four date-friendly ideas that suit the current month, so every city page has concrete options. */
+function pickDateIdeas() {
+  const season = seasonForMonth(new Date().getMonth());
+  const dateIdeas = ACTIVITY_IDEAS.filter((idea) => idea.bestFor.includes("date"));
+  const inSeason = dateIdeas.filter((idea) => idea.seasons.includes(season));
+  const picks = [...inSeason, ...dateIdeas.filter((idea) => !inSeason.includes(idea))];
+  return picks.slice(0, 4);
+}
+
 export default function CityLanding() {
   const { citySlug } = useParams<{ citySlug: string }>();
   const [, navigate] = useLocation();
   const city = CITIES[citySlug ?? ""] ?? buildGenericCity(citySlug ?? "unknown");
+  const cityDateIdeas = pickDateIdeas();
 
   useSEO({
     title: `Dating App ${city.name} ${city.stateAbbr} — Just Putzit`,
@@ -192,6 +203,31 @@ export default function CityLanding() {
                 <span className="font-medium text-foreground">{activity}</span>
               </div>
             ))}
+          </div>
+          <div className="mt-12">
+            <h3 className="text-center font-display text-2xl font-bold text-foreground">More date ideas for {city.name}</h3>
+            <p className="mx-auto mt-2 max-w-xl text-center text-sm text-muted-foreground">Low-pressure plans that work even when you are still getting to know each other.</p>
+            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {cityDateIdeas.map((idea) => (
+                <Link key={idea.id} href="/things-to-do" className="no-underline">
+                  <div className="h-full rounded-2xl border border-border bg-white p-4 transition-all hover:border-teal-300 hover:shadow-sm">
+                    <span className="text-2xl" aria-hidden="true">{idea.emoji}</span>
+                    <p className="mt-2 font-semibold leading-tight text-foreground">{idea.title}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{idea.summary}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+          <div className="mt-10 rounded-3xl border border-teal-100 bg-teal-50/60 p-6 text-center">
+            <h3 className="font-display text-2xl font-bold text-foreground">Need more than six ideas?</h3>
+            <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
+              Our Things to Do hub has {ACTIVITY_IDEAS.length} concrete plans — free walks, bowling nights, trivia, live music, classes, and seasonal outings — filtered by budget, time of day, and who is coming along.
+            </p>
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              <Button asChild className="rounded-full bg-teal-700 text-white hover:bg-teal-800"><Link href="/things-to-do">See things to do in {city.name}</Link></Button>
+              <Button asChild variant="outline" className="rounded-full border-teal-200 bg-white"><Link href="/entertainment">Concerts and showtimes</Link></Button>
+            </div>
           </div>
         </div>
       </section>
