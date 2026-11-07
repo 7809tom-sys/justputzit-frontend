@@ -11,6 +11,7 @@ import { LocalVenueBanner } from "@/components/LocalVenueBanner";
 import { WaukeshaLibrarySpotlight } from "@/components/WaukeshaLibrarySpotlight";
 import { LocationOverrideControl } from "@/components/LocationOverrideControl";
 import { useSEO } from "@/hooks/useSEO";
+import { track } from "@/lib/analytics";
 import { toast } from "sonner";
 import { useUserCity } from "@/hooks/useUserCity";
 import { toggleHomepageSection } from "@shared/homepageLayout";
@@ -1052,6 +1053,12 @@ function LandingPage({ isAuthenticated = false }: { isAuthenticated?: boolean })
   const primaryAction = isAuthenticated
     ? { label: "Continue setup", destination: "/onboarding" }
     : { label: "Join free", destination: "/signup" };
+
+  const startPrimaryAction = (placement: string) => {
+    track("landing_cta_clicked", { placement, destination: primaryAction.destination });
+    navigate(primaryAction.destination);
+  };
+
   return (
     <div className="min-h-screen overflow-x-hidden bg-background">
       <section className="relative overflow-hidden bg-gradient-to-br from-orange-50 via-amber-50 to-teal-50">
@@ -1061,7 +1068,7 @@ function LandingPage({ isAuthenticated = false }: { isAuthenticated?: boolean })
           <img src="/brand/justputzit-logo-transparent_def33678.png" alt="Just Putzit" className="h-11 w-auto object-contain sm:h-12" />
           <div className="flex items-center gap-2 sm:gap-3">
             {!isAuthenticated && <Button variant="ghost" size="sm" onClick={() => navigate("/login")}>Sign in</Button>}
-            <Button size="sm" className="rounded-full gradient-primary text-white" onClick={() => navigate(primaryAction.destination)}>{primaryAction.label}</Button>
+            <Button size="sm" className="rounded-full gradient-primary text-white" onClick={() => startPrimaryAction("header")}>{primaryAction.label}</Button>
           </div>
         </div>
 
@@ -1071,7 +1078,7 @@ function LandingPage({ isAuthenticated = false }: { isAuthenticated?: boolean })
             <h1 className="font-display text-5xl font-bold leading-[0.98] tracking-tight text-foreground sm:text-6xl lg:text-7xl">Don’t text forever.<br /><span className="text-primary">Meet somewhere real.</span></h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">Just Putzit is the alternative to swipe-only apps and conversations that go nowhere. Sally helps you connect for dates, friends, activities, and workouts—then makes a real public plan at an independent local place or official event.</p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button size="lg" className="rounded-full gradient-primary text-white btn-scale" onClick={() => navigate(primaryAction.destination)}><Heart className="mr-2 h-5 w-5" />{isAuthenticated ? "Continue your setup" : "Join free"}</Button>
+              <Button size="lg" className="rounded-full gradient-primary text-white btn-scale" onClick={() => startPrimaryAction("hero")}><Heart className="mr-2 h-5 w-5" />{isAuthenticated ? "Continue your setup" : "Join free"}</Button>
               <Button size="lg" variant="outline" className="rounded-full bg-white/70" onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}>See how it works</Button>
             </div>
             <div className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground"><span className="flex items-center gap-1.5"><Heart className="h-4 w-4 text-rose-500" />Dates, friends &amp; activity partners</span><span className="flex items-center gap-1.5"><MapPin className="h-4 w-4 text-teal-700" />Independent places first</span><span className="flex items-center gap-1.5"><Shield className="h-4 w-4 text-blue-700" />Visible safety controls</span></div>
@@ -1099,7 +1106,7 @@ function LandingPage({ isAuthenticated = false }: { isAuthenticated?: boolean })
 
       <section className="bg-white py-20"><div className="container grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-orange-700">Featured pathway</p><h2 className="mt-3 font-display text-3xl font-bold text-foreground sm:text-4xl">Gym Buddy is built to get people moving together.</h2><p className="mt-4 max-w-xl text-muted-foreground">Choose a local gym, find a compatible workout partner, plan a public session, and keep each other accountable. Community and independent gyms can request a partnership without exposing member identity or location data; proposed changes are reviewed by an administrator before publication.</p><div className="mt-6 flex flex-wrap gap-3"><Button className="rounded-full bg-orange-600 text-white hover:bg-orange-700" onClick={() => navigate("/gym-buddy")}>Explore Gym Buddy</Button><Button variant="outline" className="rounded-full" onClick={() => navigate("/vendor")}>Partner as a local gym</Button></div></div><div className="rounded-[2rem] bg-gradient-to-br from-orange-500 via-orange-600 to-amber-500 p-7 text-white shadow-xl"><div className="text-5xl">🏋️</div><p className="mt-6 text-xs font-bold uppercase tracking-[0.16em] text-orange-100">Gym Buddy</p><h3 className="mt-2 font-display text-3xl font-bold">Pick a gym. Set your style. Show up.</h3><p className="mt-4 text-sm leading-relaxed text-white/85">For accountability, workouts, and friendship—not another empty chat thread.</p><div className="mt-6 grid grid-cols-3 gap-2 text-center text-xs font-semibold"><span className="rounded-xl bg-white/15 px-2 py-3">Local gyms</span><span className="rounded-xl bg-white/15 px-2 py-3">Workout match</span><span className="rounded-xl bg-white/15 px-2 py-3">Public sessions</span></div></div></div></section>
 
-      <section className="gradient-warm py-20 text-center"><div className="container"><h2 className="font-display text-3xl font-bold text-foreground">Ready to meet somewhere real?</h2><p className="mx-auto mt-4 max-w-xl text-muted-foreground">Join free. Start with Sally, make connections with intention, and choose a local plan on your terms.</p><Button size="lg" className="mt-8 rounded-full gradient-primary text-white btn-scale" onClick={() => navigate(primaryAction.destination)}><Heart className="mr-2 h-5 w-5" />{isAuthenticated ? "Continue your setup" : "Join free today"}</Button></div></section>
+      <section className="gradient-warm py-20 text-center"><div className="container"><h2 className="font-display text-3xl font-bold text-foreground">Ready to meet somewhere real?</h2><p className="mx-auto mt-4 max-w-xl text-muted-foreground">Join free. Start with Sally, make connections with intention, and choose a local plan on your terms.</p><Button size="lg" className="mt-8 rounded-full gradient-primary text-white btn-scale" onClick={() => startPrimaryAction("footer_band")}><Heart className="mr-2 h-5 w-5" />{isAuthenticated ? "Continue your setup" : "Join free today"}</Button></div></section>
 
       <footer className="border-t border-border bg-muted/30 py-8"><div className="container flex flex-col gap-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between"><p>&copy; 2026 Just Putzit. All rights reserved.</p><div className="flex gap-6"><a href="/privacy" className="hover:text-foreground">Privacy Policy</a><a href="/terms" className="hover:text-foreground">Terms of Service</a><a href="/safety" className="hover:text-foreground">Safety &amp; Trust</a></div></div></footer>
     </div>

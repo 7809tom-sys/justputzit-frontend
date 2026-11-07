@@ -12,7 +12,7 @@ import { useSEO } from "@/hooks/useSEO";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Heart, MapPin, Shield, Sparkles, Users, Star, ChevronRight, Calendar } from "lucide-react";
-import { getLoginUrl } from "@/const";
+import { track } from "@/lib/analytics";
 import { ACTIVITY_IDEAS, seasonForMonth } from "@shared/activityIdeas";
 
 // ── City data ─────────────────────────────────────────────────────────────────
@@ -114,11 +114,23 @@ function pickDateIdeas() {
   return picks.slice(0, 4);
 }
 
+/** Maps a city-page slug to the value the signup form accepts, where they overlap. */
+const LAUNCH_CITIES_BY_SLUG: Record<string, string> = {
+  "milwaukee-wi": "milwaukee",
+};
+
 export default function CityLanding() {
   const { citySlug } = useParams<{ citySlug: string }>();
   const [, navigate] = useLocation();
   const city = CITIES[citySlug ?? ""] ?? buildGenericCity(citySlug ?? "unknown");
   const cityDateIdeas = pickDateIdeas();
+
+  const startSignup = (placement: string) => {
+    track("city_cta_clicked", { placement, city: city.slug });
+    // Only pass a city the signup form actually offers; other launch pages still reach sign-up.
+    const launchCity = LAUNCH_CITIES_BY_SLUG[city.slug];
+    navigate(launchCity ? `/signup?city=${launchCity}` : "/signup");
+  };
 
   useSEO({
     title: `Dating App ${city.name} ${city.stateAbbr} — Just Putzit`,
@@ -148,7 +160,13 @@ export default function CityLanding() {
           <button onClick={() => navigate("/")} className="flex items-center gap-2">
             <img src="/brand/justputzit-logo-transparent_def33678.png" alt="Just Putzit" className="h-11 w-auto object-contain" />
           </button>
-          <a href={getLoginUrl()}>
+          <a
+            href="/signup"
+            onClick={(event) => {
+              event.preventDefault();
+              startSignup("header");
+            }}
+          >
             <Button className="gradient-sally text-white border-0 shadow-md rounded-full px-6">
               Join Free
             </Button>
@@ -167,7 +185,13 @@ export default function CityLanding() {
             {city.description}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 mt-2">
-            <a href={getLoginUrl()}>
+            <a
+              href="/signup"
+              onClick={(event) => {
+                event.preventDefault();
+                startSignup("hero");
+              }}
+            >
               <Button size="lg" className="gradient-sally text-white border-0 shadow-lg rounded-full px-8 text-lg gap-2">
                 <Sparkles className="w-5 h-5" />
                 Meet People in {city.name}
@@ -287,7 +311,13 @@ export default function CityLanding() {
             <p className="text-lg text-muted-foreground mb-8">
               Join free. No credit card. Sally matches you in minutes.
             </p>
-            <a href={getLoginUrl()}>
+            <a
+              href="/signup"
+              onClick={(event) => {
+                event.preventDefault();
+                startSignup("final_band");
+              }}
+            >
               <Button size="lg" className="gradient-sally text-white border-0 shadow-xl rounded-full px-10 text-lg gap-2">
                 <Sparkles className="w-5 h-5" />
                 Join Just Putzit — It's Free
