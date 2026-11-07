@@ -9,6 +9,7 @@ import { useLocation, Link } from "wouter";
 import { Eye, EyeOff, Heart, Fingerprint, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { track } from "@/lib/analytics";
 import { startAuthentication } from "@simplewebauthn/browser";
 
 // ─── Login Ad Overlay ─────────────────────────────────────────────────────────
@@ -135,18 +136,22 @@ export default function Login() {
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
     setPasswordPending(false);
     if (signInError) {
+      const needsConfirmation = signInError.message.toLowerCase().includes("confirm");
       setError(
-        signInError.message.toLowerCase().includes("confirm")
+        needsConfirmation
           ? "Please confirm your email address first. Check your inbox."
           : "Invalid email or password. Please try again.",
       );
+      track("login_failed", { method: "password", reason: needsConfirmation ? "unconfirmed" : "invalid_credentials" });
       return;
     }
+    track("login_succeeded", { method: "password" });
     handleLoginSuccess();
   }
 
   async function loginWithGoogle() {
     setError("");
+    track("google_signin_started", { page: "login" });
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/` },

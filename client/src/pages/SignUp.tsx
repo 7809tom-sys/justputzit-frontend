@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/lib/supabase";
+import { track } from "@/lib/analytics";
 import { useState, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import { Eye, EyeOff, Heart, MapPin, Shield } from "lucide-react";
@@ -16,6 +17,13 @@ const LAUNCH_CITIES = [
   { value: "waukesha", label: "Waukesha, WI (Carroll University)" },
 ];
 
+/** Launch cities can be pre-selected from a city landing page (`/signup?city=milwaukee`). */
+function resolveInitialCity(): string {
+  if (typeof window === "undefined") return "milwaukee";
+  const requested = new URLSearchParams(window.location.search).get("city")?.trim().toLowerCase();
+  return LAUNCH_CITIES.some((c) => c.value === requested) ? (requested as string) : "milwaukee";
+}
+
 export default function SignUp() {
   const { isAuthenticated, loading } = useAuth();
   const [, navigate] = useLocation();
@@ -23,7 +31,7 @@ export default function SignUp() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [city, setCity] = useState("milwaukee");
+  const [city, setCity] = useState(resolveInitialCity);
   const [showPassword, setShowPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -36,6 +44,7 @@ export default function SignUp() {
 
   async function register() {
     setRegisterPending(true);
+    track("signup_submitted", { city });
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -51,14 +60,17 @@ export default function SignUp() {
       } else {
         toast.error(error.message || "Registration failed. Please try again.");
       }
+      track("signup_failed", { city, reason: error.message.toLowerCase().includes("already") ? "already_registered" : "error" });
       return;
     }
     if (!data.session) {
       // Email confirmation is on: the account becomes usable after the link in the email is opened.
+      track("signup_succeeded", { city, confirmation_required: true });
       toast.success("Check your email to confirm your account, then log in.");
       navigate("/login");
       return;
     }
+    track("signup_succeeded", { city, confirmation_required: false });
     toast.success("Welcome to Just Putzit! Let's get you set up.");
     navigate("/onboarding");
   }
