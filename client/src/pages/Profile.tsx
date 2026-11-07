@@ -22,6 +22,7 @@ import { AdvisorAvatar } from "@/components/AdvisorAvatar";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { formatProfileBirthday, getProfileAge, isProfileBirthdayToday, parseProfileBirthDate } from "../../../shared/profileBirthDate";
 import { startRegistration } from "@simplewebauthn/browser";
+import { BIOMETRIC_VERIFICATION_ENABLED } from "@shared/verificationPolicy";
 
 export default function Profile() {
   const { user } = useAuth();
@@ -32,7 +33,9 @@ export default function Profile() {
   const savedEventsCount = savedEvents?.length ?? 0;
   const { data: photos, refetch: refetchPhotos } = trpc.profile.getPhotos.useQuery();
   const { data: verificationStatus } = trpc.passkey.verificationStatus.useQuery();
-  const deviceCheckComplete = verificationStatus?.passkeyVerified ?? false;
+  // While biometric verification is switched off the passkey check is neither offered
+  // nor shown, so the account is represented by its location check alone.
+  const deviceCheckComplete = BIOMETRIC_VERIFICATION_ENABLED && (verificationStatus?.passkeyVerified ?? false);
   const cityCheckComplete = verificationStatus?.gpsPhotoVerified ?? false;
   const setPrimary = trpc.profile.setPrimaryPhoto.useMutation({
     onSuccess: () => {
@@ -762,8 +765,10 @@ export default function Profile() {
           <div className="space-y-3">
             <VettingItem icon="✅" label="Profile Created" status="complete" />
             <VettingItem icon="🎤" label="Sally profile refresh" status={profile?.interviewCount ? "complete" : "pending"} desc={`${profile?.interviewCount || 0} session${profile?.interviewCount !== 1 ? "s" : ""} completed`} />
-            <VettingItem icon="🔐" label="Device passkey" status={deviceCheckComplete ? "complete" : "pending"} desc={deviceCheckComplete ? "A passkey is set up on this device." : "Optional device security check."} />
-            {!deviceCheckComplete && (
+            {BIOMETRIC_VERIFICATION_ENABLED && (
+              <VettingItem icon="🔐" label="Device passkey" status={deviceCheckComplete ? "complete" : "pending"} desc={deviceCheckComplete ? "A passkey is set up on this device." : "Optional device security check."} />
+            )}
+            {BIOMETRIC_VERIFICATION_ENABLED && !deviceCheckComplete && (
               <div className="ml-10 rounded-2xl border border-primary/20 bg-primary/5 p-3">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-xs leading-relaxed text-muted-foreground">Set up a device passkey any time. Your device handles the biometric check; Just Putzit receives only the passkey proof.</p>

@@ -323,7 +323,7 @@ export default function CityLanding() {
                 Join Just Putzit — It's Free
               </Button>
             </a>
-            <p className="text-xs text-muted-foreground mt-4">Biometric verified · GPS location confirmed · Real people only</p>
+            <p className="text-xs text-muted-foreground mt-4">GPS location confirmed · Real people only</p>
           </div>
         </div>
       </section>

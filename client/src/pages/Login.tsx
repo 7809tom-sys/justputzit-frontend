@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { track } from "@/lib/analytics";
 import { startAuthentication } from "@simplewebauthn/browser";
+import { BIOMETRIC_VERIFICATION_ENABLED } from "@shared/verificationPolicy";
 
 // ─── Login Ad Overlay ─────────────────────────────────────────────────────────
 interface LoginAdProps {
@@ -315,21 +316,25 @@ export default function Login() {
                 >
                   {passwordPending ? "Logging in..." : "Log in"}
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="px-4 bg-background border-orange-500/30 hover:border-orange-500 hover:bg-orange-500/5 text-orange-500"
-                  onClick={handleBiometricLogin}
-                  disabled={biometricLoading || verifyAuthMutation.isPending}
-                  title="Sign in with Face ID / Fingerprint"
-                >
-                  <Fingerprint className={`w-5 h-5 ${biometricLoading ? "animate-pulse" : ""}`} />
-                </Button>
+                {BIOMETRIC_VERIFICATION_ENABLED && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="px-4 bg-background border-orange-500/30 hover:border-orange-500 hover:bg-orange-500/5 text-orange-500"
+                    onClick={handleBiometricLogin}
+                    disabled={biometricLoading || verifyAuthMutation.isPending}
+                    title="Sign in with Face ID / Fingerprint"
+                  >
+                    <Fingerprint className={`w-5 h-5 ${biometricLoading ? "animate-pulse" : ""}`} />
+                  </Button>
+                )}
               </div>
 
-              <p className="text-xs text-muted-foreground text-center -mt-1">
-                Tap <Fingerprint className="w-3 h-3 inline" /> to use Face ID or fingerprint
-              </p>
+              {BIOMETRIC_VERIFICATION_ENABLED && (
+                <p className="text-xs text-muted-foreground text-center -mt-1">
+                  Tap <Fingerprint className="w-3 h-3 inline" /> to use Face ID or fingerprint
+                </p>
+              )}
             </form>
 
             {/* Divider */}
@@ -365,11 +370,15 @@ export default function Login() {
             <span className="w-2 h-2 rounded-full bg-green-500"></span>
             Email + Password
           </span>
-          <span>·</span>
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-orange-500"></span>
-            Biometric (Face ID / Fingerprint)
-          </span>
+          {BIOMETRIC_VERIFICATION_ENABLED && (
+            <>
+              <span>·</span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+                Biometric (Face ID / Fingerprint)
+              </span>
+            </>
+          )}
           <span>·</span>
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-blue-500"></span>
