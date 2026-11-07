@@ -71,6 +71,21 @@ async function searchKeyword(keyword: string, center: { lat: number; lng: number
 }
 
 /**
+ * Places matching the given free-text keywords within `radiusMeters` of `center`,
+ * de-duplicated and nearest first. Used by the Things to Do hub to attach real venues to a curated idea.
+ * Throws when the key is missing or every lookup fails; a lookup that simply finds nothing returns [].
+ */
+export async function searchNearbyKeywords(
+  center: { lat: number; lng: number },
+  keywords: string[],
+  options: { radiusMeters?: number; perKeyword?: number; max?: number } = {},
+): Promise<NearbyPlace[]> {
+  if (!MAPTILER_KEY) throw new Error("Maps are not configured (VITE_MAPTILER_KEY)");
+  const { radiusMeters = 5000, perKeyword = 6, max = 3 } = options;
+  return searchAndDedupe(center, keywords, radiusMeters, perKeyword, max);
+}
+
+/**
  * Places of the given types within `radiusMeters` of `center`, de-duplicated and nearest first.
  * Throws when the key is missing or every lookup fails; a lookup that simply finds nothing returns [].
  */
@@ -81,7 +96,17 @@ export async function searchNearbyPlaces(
 ): Promise<NearbyPlace[]> {
   if (!MAPTILER_KEY) throw new Error("Maps are not configured (VITE_MAPTILER_KEY)");
   const { radiusMeters = 5000, perKeyword = 8, max = 12 } = options;
-  const settled = await Promise.allSettled(keywordsForType(type).map(keyword => searchKeyword(keyword, center, radiusMeters, perKeyword)));
+  return searchAndDedupe(center, keywordsForType(type), radiusMeters, perKeyword, max);
+}
+
+async function searchAndDedupe(
+  center: { lat: number; lng: number },
+  keywords: string[],
+  radiusMeters: number,
+  perKeyword: number,
+  max: number,
+): Promise<NearbyPlace[]> {
+  const settled = await Promise.allSettled(keywords.map(keyword => searchKeyword(keyword, center, radiusMeters, perKeyword)));
   const ok = settled.filter((r): r is PromiseFulfilledResult<NearbyPlace[]> => r.status === "fulfilled");
   if (ok.length === 0) throw new Error("Place search failed");
 

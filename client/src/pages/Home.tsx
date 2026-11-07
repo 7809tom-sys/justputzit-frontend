@@ -3,7 +3,7 @@ import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Heart, MapPin, Users, Sparkles, Shield, MessageCircle, ChevronRight, Star, Smartphone, Share2, MoreVertical, Plus, Megaphone, GripVertical, Settings2, X, Radio, RotateCcw, Calendar, CalendarPlus, Navigation, ExternalLink } from "lucide-react";
+import { Heart, MapPin, Users, Sparkles, Shield, MessageCircle, ChevronRight, Star, Smartphone, Share2, MoreVertical, Plus, Megaphone, GripVertical, Settings2, X, Radio, RotateCcw, Calendar, CalendarPlus, Navigation, ExternalLink, Compass } from "lucide-react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useEffect, useState, useRef, useCallback } from "react";
@@ -19,6 +19,7 @@ import { formatMilesAway, haversineDistanceMiles } from "@shared/geo";
 import { buildTodayPlanSelection } from "@shared/todaysPlan";
 import { TodayPlanInviteDialog } from "@/components/TodayPlanInviteDialog";
 import { AdvisorAvatar } from "@/components/AdvisorAvatar";
+import { ACTIVITY_IDEAS, pickSeasonalIdeas } from "@shared/activityIdeas";
 
 // ─── Module definitions ───────────────────────────────────────────────────────
 
@@ -36,15 +37,16 @@ const ALL_MODULES: ModuleDef[] = [
   { id: "matches",    label: "My Matches",          emoji: "💕", description: "See your connections",            defaultPinned: true,  defaultPosition: 1 },
   { id: "activities", label: "Local Activities",    emoji: "🗺️", description: "Discover nearby events",         defaultPinned: true,  defaultPosition: 2 },
   { id: "gymbuddy",   label: "Gym Buddy",           emoji: "🏋️", description: "Find a workout partner and plan a public session", defaultPinned: true,  defaultPosition: 3 },
-  { id: "sports",     label: "Sports & Live Scores",emoji: "🏟️", description: "Game Day Chat & live scores",    defaultPinned: true,  defaultPosition: 4 },
-  { id: "games",      label: "Games Hub",           emoji: "🎮", description: "Trivia, Jeopardy & more",        defaultPinned: true,  defaultPosition: 5 },
-  { id: "community",  label: "Community",           emoji: "👥", description: "Groups & local events",          defaultPinned: false, defaultPosition: 6 },
-  { id: "concierge",  label: "Concierge",           emoji: "🎩", description: "AI-planned date nights",         defaultPinned: false, defaultPosition: 7 },
-  { id: "marketplace",label: "Marketplace",         emoji: "🛍️", description: "Local deals & services",        defaultPinned: false, defaultPosition: 8 },
-  { id: "family",     label: "Family Connect",      emoji: "👨‍👩‍👧", description: "Meet families nearby",         defaultPinned: false, defaultPosition: 9 },
-  { id: "trip",       label: "Trip Planner",        emoji: "✈️", description: "Plan adventures together",       defaultPinned: false, defaultPosition: 10 },
-  { id: "shoutout",   label: "Shout Out",           emoji: "📣", description: "Refer friends & earn rewards",   defaultPinned: true,  defaultPosition: 11 },
-  { id: "localevents",label: "Local Events",         emoji: "🏙️", description: "Museum, library & community events", defaultPinned: false, defaultPosition: 12 },
+  { id: "thingstodo", label: "Things to Do",        emoji: "🧭", description: "Concrete plans and nearby venues", defaultPinned: true,  defaultPosition: 4 },
+  { id: "sports",     label: "Sports & Live Scores",emoji: "🏟️", description: "Game Day Chat & live scores",    defaultPinned: true,  defaultPosition: 5 },
+  { id: "games",      label: "Games Hub",           emoji: "🎮", description: "Trivia, Jeopardy & more",        defaultPinned: true,  defaultPosition: 6 },
+  { id: "community",  label: "Community",           emoji: "👥", description: "Groups & local events",          defaultPinned: false, defaultPosition: 7 },
+  { id: "concierge",  label: "Concierge",           emoji: "🎩", description: "AI-planned date nights",         defaultPinned: false, defaultPosition: 8 },
+  { id: "marketplace",label: "Marketplace",         emoji: "🛍️", description: "Local deals & services",        defaultPinned: false, defaultPosition: 9 },
+  { id: "family",     label: "Family Connect",      emoji: "👨‍👩‍👧", description: "Meet families nearby",         defaultPinned: false, defaultPosition: 10 },
+  { id: "trip",       label: "Trip Planner",        emoji: "✈️", description: "Plan adventures together",       defaultPinned: false, defaultPosition: 11 },
+  { id: "shoutout",   label: "Shout Out",           emoji: "📣", description: "Refer friends & earn rewards",   defaultPinned: true,  defaultPosition: 12 },
+  { id: "localevents",label: "Local Events",         emoji: "🏙️", description: "Museum, library & community events", defaultPinned: false, defaultPosition: 13 },
 ];
 
 interface ActiveModule {
@@ -239,7 +241,7 @@ function ActivitiesModule({ navigate }: { navigate: (p: string) => void }) {
             <p className="text-xs text-white/70 mt-1">{activity.eventDate ? new Date(activity.eventDate).toLocaleDateString() : "Flexible date"}{activity.venueCity ? ` · ${activity.venueCity}` : ""}{(activity as any).distanceMiles != null ? ` · ${formatMilesAway((activity as any).distanceMiles)}` : userLat !== undefined && userLng !== undefined && (activity as any).venueLat != null && (activity as any).venueLng != null ? ` · ${formatMilesAway(haversineDistanceMiles(userLat, userLng, Number((activity as any).venueLat), Number((activity as any).venueLng)))}` : ""}</p>
           </button>
         ))}
-        {!isLoading && filtered.length === 0 && <p className="text-xs text-white/70">No activities match those filters.</p>}
+        {!isLoading && filtered.length === 0 && <p className="text-xs text-white/70">No activities match those filters. <span className="font-semibold underline">{ACTIVITY_IDEAS.length} ready-made plans</span> are waiting in Things to Do.</p>}
       </div>
       <Button size="sm" className="mt-4 bg-white/20 hover:bg-white/30 text-white border-0 rounded-full gap-2" onClick={(event) => { event.stopPropagation(); navigate("/activities"); }}>
         Explore all <ChevronRight className="w-3.5 h-3.5" />
@@ -339,6 +341,39 @@ function MarketplaceModule({ navigate }: { navigate: (p: string) => void }) {
         <p className="text-muted-foreground text-sm">Local deals & services</p>
       </div>
       <ChevronRight className="w-5 h-5 text-muted-foreground" />
+    </div>
+  );
+}
+
+function ThingsToDoModule({ navigate }: { navigate: (p: string) => void }) {
+  const { city } = useUserCity();
+  const seasonal = pickSeasonalIdeas(new Date(), 3);
+  return (
+    <div className="rounded-3xl bg-gradient-to-br from-teal-600 to-emerald-700 p-6 card-hover cursor-pointer" onClick={() => navigate("/things-to-do")}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="mb-1 text-sm font-medium text-white/80">Ideas, not small talk</p>
+          <h2 className="font-display text-2xl font-bold text-white">Things to Do</h2>
+          <p className="mt-1 text-sm text-white/70">{ACTIVITY_IDEAS.length} concrete plans near {city}</p>
+        </div>
+        <Compass className="h-9 w-9 shrink-0 text-white/80" aria-hidden="true" />
+      </div>
+      <div className="mt-4 grid gap-2">
+        {seasonal.map((idea) => (
+          <button
+            key={idea.id}
+            type="button"
+            className="flex w-full items-center justify-between gap-2 rounded-2xl bg-white/15 px-3 py-2 text-left text-white transition-colors hover:bg-white/25"
+            onClick={(event) => { event.stopPropagation(); navigate("/things-to-do"); }}
+          >
+            <span className="truncate text-sm font-semibold"><span aria-hidden="true" className="mr-1.5">{idea.emoji}</span>{idea.title}</span>
+            <ChevronRight className="h-4 w-4 shrink-0 text-white/70" aria-hidden="true" />
+          </button>
+        ))}
+      </div>
+      <Button size="sm" className="mt-4 gap-2 rounded-full border-0 bg-white/20 text-white hover:bg-white/30" onClick={(event) => { event.stopPropagation(); navigate("/things-to-do"); }}>
+        Find a place nearby <ChevronRight className="w-3.5 h-3.5" />
+      </Button>
     </div>
   );
 }
@@ -655,6 +690,7 @@ function renderModule(moduleId: string, navigate: (p: string) => void, profile: 
     case "sally":       return <SallyModule profile={profile} navigate={navigate} />;
     case "matches":     return <MatchesModule matches={matches} navigate={navigate} />;
     case "activities":  return <ActivitiesModule navigate={navigate} />;
+    case "thingstodo":  return <ThingsToDoModule navigate={navigate} />;
     case "sports":      return <SportsModule navigate={navigate} />;
     case "games":       return <GamesModule navigate={navigate} />;
     case "community":   return <CommunityModule navigate={navigate} />;
