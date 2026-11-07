@@ -1,0 +1,54 @@
+name: Frontend checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.4.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      # The app imports types from the API server, which lives in a separate repository, so a full
+      # typecheck cannot pass here yet. Report the count instead of gating on it until those types
+      # are published as a package.
+      - name: Typecheck (informational)
+        run: |
+          set +e
+          output=$(pnpm typecheck 2>&1)
+          status=$?
+          count=$(printf '%s' "$output" | grep -c "error TS")
+          echo "TypeScript reported $count error(s)."
+          if [ "$status" -ne 0 ]; then
+            {
+              echo "### TypeScript: $count error(s) (not gating)"
+              echo '```'
+              printf '%s\n' "$output" | head -60
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit 0
