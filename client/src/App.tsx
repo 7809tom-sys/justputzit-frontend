@@ -41,6 +41,7 @@ import AdminMembers from "@/pages/AdminMembers";
 import { APP_ROUTES } from "@/lib/routes";
 import GameLobby from "@/pages/GameLobby";
 import Entertainment from "@/pages/Entertainment";
+import ThingsToDo from "@/pages/ThingsToDo";
 import ShoutOut from "@/pages/ShoutOut";
 import AccountVerify from "@/pages/AccountVerify";
 import AdvertiseWithUs from "@/pages/AdvertiseWithUs";
@@ -75,7 +76,7 @@ import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
 
 // Routes that are allowed without account verification
-const PUBLIC_ROUTES = ["/login", "/signup", "/forgot-password", "/reset-password", "/verify", "/verify-account", "/404", "/city/", "/events/", "/profile", "/gym-pitch", "/privacy", "/terms", "/claim", "/organization/", "/join/organization/"];
+const PUBLIC_ROUTES = ["/login", "/signup", "/forgot-password", "/reset-password", "/verify", "/verify-account", "/404", "/city/", "/events/", "/things-to-do", "/entertainment", "/profile", "/gym-pitch", "/privacy", "/terms", "/claim", "/organization/", "/join/organization/"];
 
 /**
  * Verification gate — runs on every navigation for logged-in users.
@@ -164,6 +165,7 @@ function Router() {
         <Route path={APP_ROUTES.notifications} component={Notifications} />
         <Route path="/game-lobby" component={GameLobby} />
         <Route path="/entertainment" component={Entertainment} />
+        <Route path="/things-to-do" component={ThingsToDo} />
         <Route path="/shout-out" component={ShoutOut} />
         <Route path="/refer" component={ShoutOut} />
         <Route path="/safety" component={Safety} />

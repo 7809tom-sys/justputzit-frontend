@@ -27,6 +27,7 @@ import {
   Users2,
   Briefcase,
   Dumbbell,
+  Compass,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
@@ -58,6 +59,7 @@ export default function MobileBottomNav() {
 
   // All extra features in the "More" sheet
   const moreItems = [
+    { href: "/things-to-do", icon: Compass, label: "Things to Do", color: "text-teal-600" },
     { href: "/gym-buddy", icon: Dumbbell, label: "Gym Buddy", color: "text-orange-600" },
     { href: "/entertainment", icon: Popcorn, label: "Entertainment", color: "text-orange-500" },
     { href: "/shout-out", icon: Megaphone, label: "Refer a Friend", color: "text-rose-500" },
