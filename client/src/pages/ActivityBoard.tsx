@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Calendar as CalendarWidget } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { MapPin, Calendar, CalendarDays, List, Users, Search, CheckCircle, BookOpen, GraduationCap, Newspaper, ExternalLink, Plus, BellRing, ShieldCheck, Trophy, Megaphone, Bookmark, BookmarkCheck, Share2, SlidersHorizontal, ChevronDown, Heart, Sparkles, ArrowRight, Compass } from "lucide-react";
-import { MapView, addMarker, type MapInstance } from "@/components/Map";
+import { MapView, addMarker, type MapInstance, type MapMarker } from "@/components/Map";
 import { searchNearbyPlaces } from "@/lib/maptiler";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -18,6 +18,7 @@ import { LocalVenueBanner } from "@/components/LocalVenueBanner";
 import { CommunityDirectoryPanel } from "@/components/CommunityDirectoryPanel";
 import { LocationOverrideControl } from "@/components/LocationOverrideControl";
 import { useUserCity } from "@/hooks/useUserCity";
+import { useMapCenter } from "@/hooks/useMapCenter";
 import { formatMilesAway, haversineDistanceMiles } from "@shared/geo";
 import { filterPersonalizedRecommendations, getRecommendationCategories, type RecommendationSort, type RecommendationTimeWindow } from "@/lib/personalizedRecommendationFilters";
 import { ACTIVITY_IDEAS } from "@shared/activityIdeas";
@@ -350,22 +351,51 @@ export default function ActivityBoard() {
     });
   }
 
-  const handleMapReady = useCallback((map: MapInstance) => {
-    setMapReady(true);
-    const center = map.getCenter();
-    const types = ["library", "bowling_alley", "movie_theater", "restaurant", "park", "gym", "spa"];
-    types.forEach(type => {
-      searchNearbyPlaces({ lat: center.lat, lng: center.lng }, type, { radiusMeters: 5000, max: 3 })
-        .then(places => {
-          places.forEach(place => {
-            addMarker(map, { lat: place.lat, lng: place.lng, label: place.name, color: "#3b82f6" });
-          });
-        })
-        .catch(() => {
-          // Markers are a nicety; the board works without them.
-        });
-    });
+  const mapRef = useRef<MapInstance | null>(null);
+  const mapMarkersRef = useRef<MapMarker[]>([]);
+  const mapSearchSeq = useRef(0);
+
+  // The map always follows the selected city shown in the heading, then falls back to Milwaukee.
+  // It never falls back to an unrelated city such as San Francisco.
+  const mapCenter = useMapCenter({ city: userCity, state: detectedCity?.state ?? profile?.state, lat: userLat, lng: userLng });
+
+  const clearMapMarkers = useCallback(() => {
+    mapMarkersRef.current.forEach(marker => marker.remove());
+    mapMarkersRef.current = [];
   }, []);
+
+  // Nearby venue pins are searched from the map's own city center, so they always belong to the city shown.
+  const loadNearbyMarkers = useCallback((map: MapInstance, center: { lat: number; lng: number }) => {
+    const seq = ++mapSearchSeq.current;
+    const types = ["library", "bowling_alley", "movie_theater", "restaurant", "park", "gym", "spa"];
+    Promise.all(types.map(type => searchNearbyPlaces(center, type, { radiusMeters: 5000, max: 3 }).catch(() => [])))
+      .then(results => {
+        if (seq !== mapSearchSeq.current || mapRef.current !== map) return;
+        clearMapMarkers();
+        const seen = new Set<string>();
+        for (const place of results.flat()) {
+          if (seen.has(place.id)) continue;
+          seen.add(place.id);
+          mapMarkersRef.current.push(addMarker(map, { lat: place.lat, lng: place.lng, label: place.name, color: "#3b82f6" }));
+        }
+      })
+      .catch(() => {
+        // Markers are a nicety; the board works without them.
+      });
+  }, [clearMapMarkers]);
+
+  const handleMapReady = useCallback((map: MapInstance) => {
+    mapRef.current = map;
+    setMapReady(true);
+  }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    loadNearbyMarkers(map, mapCenter);
+  }, [mapReady, mapCenter, loadNearbyMarkers]);
+
+  useEffect(() => () => clearMapMarkers(), [clearMapMarkers]);
 
   const filteredActivities = activities?.filter(a =>
     searchQuery === "" ||
@@ -1179,12 +1209,14 @@ export default function ActivityBoard() {
               <div className="p-4 border-b border-gray-100">
                 <h3 className="font-bold text-gray-900 flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-primary" />
-                  Activities Near You
+                  Activities Near {mapCenter.label}
                 </h3>
-                <p className="text-xs text-gray-500 mt-1">Powered by MapTiler</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Venues near {mapCenter.label} · Powered by MapTiler
+                </p>
               </div>
               <div className="h-64">
-                <MapView onMapReady={handleMapReady} className="w-full h-full" />
+                <MapView center={mapCenter} onMapReady={handleMapReady} className="w-full h-full" />
               </div>
             </div>
 

@@ -118,3 +118,31 @@ async function searchAndDedupe(
 
 /** A map-app directions link (works without any key). */
 export const directionsUrl = (lat: number, lng: number) => `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+
+type GeocodeFeature = {
+  center: [number, number];
+  place_name: string;
+  text: string;
+  properties?: { categories?: string[] };
+};
+
+/**
+ * Coordinates for a free-text place such as "Waukesha, WI" or "53202".
+ *
+ * Used only when the selected city is not in the built-in center table, so a member's own town still
+ * centers the map instead of an unrelated default. Returns null when the lookup finds nothing.
+ */
+export async function geocodePlace(query: string): Promise<{ lat: number; lng: number; name: string } | null> {
+  const text = query.trim();
+  if (!MAPTILER_KEY || text.length < 2) return null;
+  const url = new URL(`https://api.maptiler.com/geocoding/${encodeURIComponent(text)}.json`);
+  url.searchParams.set("key", MAPTILER_KEY);
+  url.searchParams.set("types", "municipality,place,postal_code");
+  url.searchParams.set("limit", "1");
+  url.searchParams.set("language", "en");
+  const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+  if (!response.ok) throw new Error(`Location lookup failed (${response.status})`);
+  const feature = ((await response.json()) as { features?: GeocodeFeature[] }).features?.[0];
+  if (!feature) return null;
+  return { lat: feature.center[1], lng: feature.center[0], name: feature.text || feature.place_name };
+}
