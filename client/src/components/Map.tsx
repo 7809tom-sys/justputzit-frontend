@@ -2,6 +2,11 @@
  * MapView: an interactive MapTiler map.
  *
  * - Needs VITE_MAPTILER_KEY (public; restrict it to your site's origins in the MapTiler dashboard).
+ * - `center` is required and is the member's selected city: the map opens there and eases to a new center
+ *   when it changes. There is intentionally no default city, so a caller can never silently show a place
+ *   the page is not about.
+ * - Tiles come from MapTiler's live tile service. The service worker deliberately leaves them uncached
+ *   (see vite.config.ts), so a style update is picked up instead of an old snapshot.
  * - The MapTiler SDK is large, so it is loaded on demand: it becomes its own chunk, fetched only when a page
  *   that shows a map is opened.
  * - `onMapReady` receives the underlying @maptiler/sdk Map once its style has loaded. The SDK accepts
@@ -9,7 +14,7 @@
  */
 
 import type * as MapTilerSDK from "@maptiler/sdk";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePersistFn } from "@/hooks/usePersistFn";
 import { cn } from "@/lib/utils";
 import { MAPTILER_KEY } from "@/lib/maptiler";
@@ -37,19 +42,25 @@ export function addMarker(map: MapInstance, place: { lat: number; lng: number; l
 
 interface MapViewProps {
   className?: string;
-  initialCenter?: { lat: number; lng: number };
-  initialZoom?: number;
+  /** The selected city. Required so the map can never fall back to an unrelated default location. */
+  center: { lat: number; lng: number };
+  /** Zoom used when the map opens and when it recenters on a new city. */
+  zoom?: number;
   onMapReady?: (map: MapInstance) => void;
 }
 
-export function MapView({
-  className,
-  initialCenter = { lat: 37.7749, lng: -122.4194 },
-  initialZoom = 12,
-  onMapReady,
-}: MapViewProps) {
+export function MapView({ className, center, zoom = 12, onMapReady }: MapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const ready = usePersistFn((instance: MapInstance) => onMapReady?.(instance));
+  const mapRef = useRef<MapInstance | null>(null);
+  const [ready, setReady] = useState(false);
+  const ready$ = usePersistFn((instance: MapInstance) => onMapReady?.(instance));
+
+  // The map is created once. Keep the latest props in refs so the creation effect stays dependency-free.
+  const initialCenter = useRef(center);
+  initialCenter.current = center;
+  const initialZoom = useRef(zoom);
+  initialZoom.current = zoom;
+  const shownCenter = useRef({ lat: center.lat, lng: center.lng, zoom });
 
   useEffect(() => {
     if (!MAPTILER_KEY) {
@@ -57,32 +68,45 @@ export function MapView({
       return;
     }
     let cancelled = false;
-    let instance: MapInstance | null = null;
 
     loadSdk()
       .then(maptilersdk => {
         if (cancelled || !mapContainer.current) return;
         maptilersdk.config.apiKey = MAPTILER_KEY;
-        instance = new maptilersdk.Map({
+        const instance = new maptilersdk.Map({
           container: mapContainer.current,
           style: maptilersdk.MapStyle.STREETS,
-          center: [initialCenter.lng, initialCenter.lat],
-          zoom: initialZoom,
+          center: [initialCenter.current.lng, initialCenter.current.lat],
+          zoom: initialZoom.current,
           navigationControl: true,
           geolocateControl: false,
         });
+        mapRef.current = instance;
         instance.on("load", () => {
-          if (instance && !cancelled) ready(instance);
+          if (cancelled) return;
+          setReady(true);
+          ready$(instance);
         });
       })
       .catch(error => console.error("MapView: could not load the map", error));
 
     return () => {
       cancelled = true;
-      instance?.remove();
+      mapRef.current?.remove();
+      mapRef.current = null;
+      setReady(false);
     };
-    // The map is created once; later center/zoom changes are made through the instance.
   }, []);
+
+  // Recenter when the member's city changes (a new selection, GPS fix, or saved location).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    const previous = shownCenter.current;
+    if (previous.lat === center.lat && previous.lng === center.lng && previous.zoom === zoom) return;
+    shownCenter.current = { lat: center.lat, lng: center.lng, zoom };
+    map.easeTo({ center: [center.lng, center.lat], zoom, duration: 700 });
+  }, [center.lat, center.lng, zoom, ready]);
 
   return <div ref={mapContainer} className={cn("w-full h-[500px]", className)} />;
 }

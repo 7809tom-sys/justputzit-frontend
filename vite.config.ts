@@ -28,6 +28,13 @@ const plugins = [
             expiration: { maxEntries: 50, maxAgeSeconds: 300 },
           },
         },
+        {
+          // Map tiles, styles, and glyphs must always be current: ask the network, never the cache.
+          // (Without a rule Workbox would already leave them alone; this makes the intent explicit so a
+          // future cache-everything rule cannot serve stale tiles.)
+          urlPattern: /^https:\/\/api\.maptiler\.(?:com|eu)\//,
+          handler: "NetworkOnly",
+        },
       ],
     },
     devOptions: {
