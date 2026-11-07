@@ -255,8 +255,16 @@ export default function Activities() {
           <div className="bg-white rounded-3xl shadow-sm overflow-hidden">
             <MapView
               className="h-96 lg:h-[480px]"
-              initialCenter={{ lat: 39.8283, lng: -98.5795 }}
-              initialZoom={4}
+              initialCenter={trustedLocation}
+              initialZoom={trustedLocation ? 13 : 1}
+              center={trustedLocation}
+              zoom={trustedLocation ? 13 : undefined}
+              emptyState={
+                <div className="px-4 text-center text-sm text-muted-foreground">
+                  <MapPin className="mx-auto mb-2 h-5 w-5 text-primary" />
+                  Allow location access to see places near you.
+                </div>
+              }
               onMapReady={handleMapReady}
             />
           </div>
