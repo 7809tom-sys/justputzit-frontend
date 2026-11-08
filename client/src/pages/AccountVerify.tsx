@@ -1,12 +1,16 @@
 /**
- * AccountVerify — mandatory two-step verification gate.
+ * AccountVerify — account verification gate.
  *
- * Step 1: Register a passkey (biometric / device PIN)
- * Step 2: Upload a photo with GPS EXIF data to verify your city
+ * With biometric verification switched off (see shared/verificationPolicy.ts) the
+ * page shows a single GPS photo step. The WebAuthn passkey step and its stepper
+ * entry stay in the code so turning BIOMETRIC_VERIFICATION_ENABLED back on restores
+ * the original two-step flow.
  *
- * Users are redirected here automatically if they haven't completed both steps.
+ * The GPS step uploads the photo and records the location check the verification
+ * gate reads (profile.locationVerified via trpc.verification.checkGps), so a member
+ * can finish verification with no biometric credential.
  */
-import { useEffect, useState, useRef } from "react";
+import { Fragment, useEffect, useState, useRef } from "react";
 import { apiFetch } from "@/lib/supabase";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -14,11 +18,18 @@ import { toast } from "sonner";
 import { Fingerprint, Camera, CheckCircle, ChevronRight, Shield, MapPin, AlertCircle } from "lucide-react";
 import { startRegistration } from "@simplewebauthn/browser";
 import { useLocation } from "wouter";
+import { extractPhotoGps, readBrowserLocation } from "@/lib/photoGps";
+import {
+  BIOMETRIC_VERIFICATION_ENABLED,
+  getVerificationSteps,
+  isAccountVerificationComplete,
+  type VerificationStepKey,
+} from "@shared/verificationPolicy";
 
-type Step = 1 | 2;
+type Step = VerificationStepKey;
 
 export default function AccountVerify() {
-  const [step, setStep] = useState<Step>(1);
+  const [step, setStep] = useState<Step>(BIOMETRIC_VERIFICATION_ENABLED ? "biometric" : "gps");
   const [passkeyDone, setPasskeyDone] = useState(false);
   const [gpsDone, setGpsDone] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -27,6 +38,11 @@ export default function AccountVerify() {
   const [, navigate] = useLocation();
 
   const { data: verificationStatus } = trpc.passkey.verificationStatus.useQuery();
+  const { data: profile } = trpc.profile.get.useQuery();
+  // The city saved at sign-up/onboarding. The backend falls back to the Milwaukee
+  // launch metro when it is empty.
+  const cityFields = profile as { city?: string | null; claimedCity?: string | null } | undefined;
+  const claimedCity = cityFields?.city || cityFields?.claimedCity || "milwaukee";
 
   // React to verification status changes after render so the gate never navigates
   // or changes state while React is reconciling this component.
@@ -34,14 +50,14 @@ export default function AccountVerify() {
     if (!verificationStatus) return;
     if (verificationStatus.passkeyVerified) setPasskeyDone(true);
     if (verificationStatus.gpsPhotoVerified) setGpsDone(true);
-    if (verificationStatus.passkeyVerified && verificationStatus.gpsPhotoVerified) {
+    if (isAccountVerificationComplete(verificationStatus)) {
       navigate("/");
-    } else if (verificationStatus.passkeyVerified) {
-      setStep(2);
+    } else if (verificationStatus.passkeyVerified && BIOMETRIC_VERIFICATION_ENABLED) {
+      setStep("gps");
     }
   }, [verificationStatus?.passkeyVerified, verificationStatus?.gpsPhotoVerified, navigate]);
 
-  // ── Passkey registration ──────────────────────────────────────────────────
+  // ── Passkey registration (only reachable while biometric verification is on) ──
   const utils = trpc.useUtils();
   const verifyRegistrationMutation = trpc.passkey.verifyRegistration.useMutation();
   const markVerifiedMutation = trpc.passkey.markVerified.useMutation();
@@ -54,7 +70,7 @@ export default function AccountVerify() {
       await markVerifiedMutation.mutateAsync();
       setPasskeyDone(true);
       toast.success("Biometric set up! Moving to step 2…");
-      setStep(2);
+      setStep("gps");
     } catch (err: any) {
       if (err?.name === "NotAllowedError") {
         toast.error("Biometric setup was cancelled. Please try again.");
@@ -62,7 +78,7 @@ export default function AccountVerify() {
         // Already registered — just mark verified and move on
         await markVerifiedMutation.mutateAsync();
         setPasskeyDone(true);
-        setStep(2);
+        setStep("gps");
       } else {
         toast.error(err?.message ?? "Biometric setup failed. Please try again.");
       }
@@ -70,36 +86,77 @@ export default function AccountVerify() {
   }
 
   // ── GPS photo upload ──────────────────────────────────────────────────────
+  const checkGpsMutation = trpc.verification.checkGps.useMutation();
+
   async function handlePhotoUpload(file: File) {
     setUploading(true);
+    setGpsResult(null);
     try {
-      const formData = new FormData();
-      formData.append("photo", file);
-      const resp = await apiFetch("/api/photos/upload", {
-        method: "POST",
-        body: formData,
+      // Read the coordinates first: they are what the verification gate needs.
+      // Photo EXIF is preferred; the browser position is the fallback for phones
+      // and browsers that strip location metadata from the file.
+      const photoGps = await extractPhotoGps(file);
+      const coords = photoGps ?? (await readBrowserLocation());
+
+      if (!coords) {
+        setGpsResult({
+          cityVerified: false,
+          verificationNote:
+            "We couldn't find a location in this photo or from your device. Turn on Location Services, then take a fresh photo and try again.",
+        });
+        toast.warning("Location not detected. Please retake the photo with location services on.");
+        return;
+      }
+
+      const check = await checkGpsMutation.mutateAsync({
+        lat: coords.lat,
+        lng: coords.lng,
+        claimedCity,
       });
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(data.error ?? "Upload failed");
-      setGpsResult({ cityVerified: data.cityVerified, verificationNote: data.verificationNote });
-      if (data.cityVerified) {
+
+      // Keep the photo on the profile as well; a storage failure must not stop
+      // an otherwise valid location check from completing verification.
+      let photoNote: string | null = null;
+      try {
+        const formData = new FormData();
+        formData.append("photo", file);
+        const resp = await apiFetch("/api/photos/upload", { method: "POST", body: formData });
+        if (!resp.ok) {
+          const data = await resp.json().catch(() => ({}));
+          photoNote = data?.error ?? null;
+        }
+      } catch {
+        photoNote = null;
+      }
+
+      const note = check.verified
+        ? `Location confirmed in ${check.cityLabel}.`
+        : `Your location looks like it is ${check.distanceKm}km from ${check.cityLabel}, so the city check didn't pass.`;
+
+      setGpsResult({ cityVerified: check.verified, verificationNote: note });
+
+      if (check.verified) {
         setGpsDone(true);
+        void utils.passkey.verificationStatus.invalidate();
+        void utils.profile.getPhotos.invalidate();
+        void utils.profile.get.invalidate();
         toast.success("Location verified! Your account is now active. 🎉");
-        setTimeout(() => navigate("/"), 1500);
+        setTimeout(() => navigate("/"), 1200);
+      } else if (photoNote) {
+        toast.warning("Photo couldn't be saved, and the location check didn't pass. Please try again.");
       } else {
-        toast.warning("Photo uploaded but location couldn't be verified. You can still continue.");
-        // Allow them through anyway — GPS data may not be in photo (stripped by OS)
-        setGpsDone(true);
-        setTimeout(() => navigate("/"), 2000);
+        toast.warning("Location check didn't pass. Try again with a fresh photo taken where you are.");
       }
     } catch (err: any) {
       toast.error(err.message ?? "Upload failed. Please try again.");
     } finally {
       setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
 
-  const allDone = passkeyDone && gpsDone;
+  const allDone = BIOMETRIC_VERIFICATION_ENABLED ? passkeyDone && gpsDone : gpsDone;
+  const steps = getVerificationSteps();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-rose-50 flex items-center justify-center px-4">
@@ -111,31 +168,35 @@ export default function AccountVerify() {
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Verify Your Account</h1>
           <p className="text-gray-500 text-sm">
-            Just Putzit requires two quick steps to keep our community safe and authentic.
+            {BIOMETRIC_VERIFICATION_ENABLED
+              ? "Just Putzit requires two quick steps to keep our community safe and authentic."
+              : "Just Putzit requires one quick step to keep our community safe and authentic."}
           </p>
         </div>
 
         {/* Progress Steps */}
-        <div className="flex items-center gap-3 mb-8">
-          <StepIndicator
-            number={1}
-            label="Biometric"
-            icon={<Fingerprint className="w-4 h-4" />}
-            done={passkeyDone}
-            active={step === 1}
-          />
-          <div className={`flex-1 h-0.5 rounded-full transition-colors ${passkeyDone ? "bg-primary" : "bg-gray-200"}`} />
-          <StepIndicator
-            number={2}
-            label="GPS Photo"
-            icon={<Camera className="w-4 h-4" />}
-            done={gpsDone}
-            active={step === 2}
-          />
+        <div className={`flex items-center gap-3 mb-8 ${steps.length === 1 ? "justify-center" : ""}`}>
+          {steps.map((entry, index) => {
+            const isBiometric = entry.key === "biometric";
+            return (
+              <Fragment key={entry.key}>
+                <StepIndicator
+                  number={index + 1}
+                  label={entry.label}
+                  icon={isBiometric ? <Fingerprint className="w-4 h-4" /> : <Camera className="w-4 h-4" />}
+                  done={isBiometric ? passkeyDone : gpsDone}
+                  active={step === entry.key}
+                />
+                {index < steps.length - 1 && (
+                  <div className={`flex-1 h-0.5 rounded-full transition-colors ${passkeyDone ? "bg-primary" : "bg-gray-200"}`} />
+                )}
+              </Fragment>
+            );
+          })}
         </div>
 
-        {/* Step 1: Passkey */}
-        {step === 1 && (
+        {/* Step: Passkey (hidden while biometric verification is switched off) */}
+        {BIOMETRIC_VERIFICATION_ENABLED && step === "biometric" && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -186,7 +247,7 @@ export default function AccountVerify() {
                 variant="ghost"
                 size="sm"
                 className="w-full text-gray-500 hover:text-gray-700 text-xs"
-                onClick={() => { setPasskeyDone(true); setStep(2); }}
+                onClick={() => { setPasskeyDone(true); setStep("gps"); }}
               >
                 Skip biometric — continue to location step
               </Button>
@@ -194,8 +255,8 @@ export default function AccountVerify() {
           </div>
         )}
 
-        {/* Step 2: GPS Photo */}
-        {step === 2 && (
+        {/* Step: GPS Photo */}
+        {step === "gps" && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center">
