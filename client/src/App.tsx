@@ -80,7 +80,8 @@ const PUBLIC_ROUTES = ["/login", "/signup", "/forgot-password", "/reset-password
 
 /**
  * Verification gate — runs on every navigation for logged-in users.
- * If the user hasn't completed passkey + GPS photo, they're redirected to /verify-account.
+ * If the user hasn't completed the location (GPS photo) check, they're redirected
+ * to /verify-account. The biometric passkey step is optional and is not gated here.
  */
 function VerificationGate({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useLocation();
@@ -95,7 +96,9 @@ function VerificationGate({ children }: { children: React.ReactNode }) {
     if (!user) return;
     // Don't redirect if already on a public route
     if (PUBLIC_ROUTES.some(r => location.startsWith(r))) return;
-    // Only block if GPS photo is not verified (passkey is optional — not all devices support it)
+    // Only block if the location check is missing. The passkey step is optional for
+    // everyone and switched off while BIOMETRIC_VERIFICATION_ENABLED is false, so it
+    // must never be required to finish verification.
     if (status && !status.gpsPhotoVerified) {
       navigate("/verify-account");
     }
