@@ -138,13 +138,13 @@ export function getActivityMapCenter(
 
 /**
  * Zoom that frames the pins. Tight enough to show a neighbourhood, wide enough that a city-wide
- * spread still fits.
+ * spread still fits. With no pins it returns the city zoom, since the map is showing a city instead.
  */
 export function getActivityMapZoom(
   pins: readonly MapPin[],
-  hasFallback: boolean
+  cityZoom = 12
 ): number {
-  if (pins.length === 0) return hasFallback ? 12 : 12;
+  if (pins.length === 0) return cityZoom;
   if (pins.length === 1) return 14;
   const latitudes = pins.map(p => p.lat);
   const longitudes = pins.map(p => p.lng);

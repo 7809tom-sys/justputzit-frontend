@@ -116,9 +116,10 @@ describe("activity map viewport", () => {
       []
     );
 
-    expect(getActivityMapZoom(tight, false)).toBeGreaterThan(
-      getActivityMapZoom(wide, false)
+    expect(getActivityMapZoom(tight)).toBeGreaterThan(
+      getActivityMapZoom(wide)
     );
-    expect(getActivityMapZoom([], true)).toBe(12);
+    expect(getActivityMapZoom([])).toBe(12);
+    expect(getActivityMapZoom([], 13)).toBe(13);
   });
 });

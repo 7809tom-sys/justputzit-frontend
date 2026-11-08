@@ -17,10 +17,14 @@ import { LocalVenueBanner } from "@/components/LocalVenueBanner";
 import { CommunityDirectoryPanel } from "@/components/CommunityDirectoryPanel";
 import { LocationOverrideControl } from "@/components/LocationOverrideControl";
 import { useUserCity } from "@/hooks/useUserCity";
+import { useMapCenter } from "@/hooks/useMapCenter";
 import { formatMilesAway, haversineDistanceMiles } from "@shared/geo";
 import { getActivityMapCenter, getActivityMapPins, getActivityMapZoom } from "@shared/activityMapPins";
 import { filterPersonalizedRecommendations, getRecommendationCategories, type RecommendationSort, type RecommendationTimeWindow } from "@/lib/personalizedRecommendationFilters";
 import { ACTIVITY_IDEAS } from "@shared/activityIdeas";
+
+/** City-level zoom, used when the board has no pins to frame. */
+const MAP_CITY_ZOOM = 12;
 
 const CATEGORIES = [
   { id: "all", label: "All Activities", emoji: "✨" },
@@ -357,6 +361,10 @@ export default function ActivityBoard() {
     setMapReady(true);
   }, []);
 
+  // The map always follows the selected city shown in the heading, then falls back to Milwaukee.
+  // It never falls back to an unrelated city such as San Francisco.
+  const cityMapCenter = useMapCenter({ city: userCity, state: detectedCity?.state ?? profile?.state, lat: userLat, lng: userLng });
+
   const filteredActivities = activities?.filter(a =>
     searchQuery === "" ||
     a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -405,15 +413,21 @@ export default function ActivityBoard() {
       getActivityMapPins(
         (filteredActivities ?? []) as Array<{ id: number; title?: string | null; venueLat?: number | string | null; venueLng?: number | string | null }>,
         (filteredCommunity ?? []) as Array<{ id: number | string; title?: string | null; lat?: number | string | null; lng?: number | string | null }>,
-        { center: userLat !== undefined && userLng !== undefined ? { lat: userLat, lng: userLng } : null },
+        { center: cityMapCenter },
       ),
-    [filteredActivities, filteredCommunity, userLat, userLng],
+    [filteredActivities, filteredCommunity, cityMapCenter.lat, cityMapCenter.lng],
   );
 
-  // Only fall back to the viewer's own coordinates when we actually know them.
-  const mapFallbackCenter = userLat !== undefined && userLng !== undefined ? { lat: userLat, lng: userLng } : null;
-  const mapCenter = useMemo(() => getActivityMapCenter(mapPins, mapFallbackCenter), [mapPins, mapFallbackCenter]);
-  const mapZoom = useMemo(() => getActivityMapZoom(mapPins, Boolean(mapFallbackCenter)), [mapPins, mapFallbackCenter]);
+  // The viewport frames the pins when there are any; otherwise it stays on the selected city.
+  const pinViewport = useMemo(() => {
+    const center = getActivityMapCenter(mapPins);
+    return center ? { center, zoom: getActivityMapZoom(mapPins) } : null;
+  }, [mapPins]);
+  // The pins decide where the map looks, but the heading keeps naming the city the board is about.
+  const mapCenter = pinViewport
+    ? { ...pinViewport.center, label: cityMapCenter.label, source: cityMapCenter.source }
+    : cityMapCenter;
+  const mapZoom = pinViewport?.zoom ?? MAP_CITY_ZOOM;
 
   // Keep the markers in step with the filtered list, so the map never shows something the list does not.
   useEffect(() => {
@@ -1212,29 +1226,16 @@ export default function ActivityBoard() {
               <div className="p-4 border-b border-gray-100">
                 <h3 className="font-bold text-gray-900 flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-primary" />
-                  Activities Near You
+                  Activities Near {mapCenter.label}
                 </h3>
                 <p className="text-xs text-gray-500 mt-1">
                   {mapPins.length > 0
-                    ? `${mapPins.length} ${mapPins.length === 1 ? "place" : "places"} on the map${userCity ? ` near ${userCity.split(",")[0].trim()}` : ""} · Powered by MapTiler`
-                    : "Powered by MapTiler"}
+                    ? `${mapPins.length} ${mapPins.length === 1 ? "place" : "places"} on the map near ${mapCenter.label} · Powered by MapTiler`
+                    : `Venues near ${mapCenter.label} · Powered by MapTiler`}
                 </p>
               </div>
               <div className="h-64">
-                <MapView
-                  onMapReady={handleMapReady}
-                  className="w-full h-full"
-                  center={mapCenter}
-                  zoom={mapZoom}
-                  emptyState={
-                    <div className="px-4 text-center text-xs text-gray-500">
-                      <MapPin className="mx-auto mb-2 h-5 w-5 text-primary" />
-                      {userCity
-                        ? `We do not have map locations for activities near ${userCity.split(",")[0].trim()} yet.`
-                        : "Set your city to see activities on the map."}
-                    </div>
-                  }
-                />
+                <MapView center={mapCenter} zoom={mapZoom} onMapReady={handleMapReady} className="w-full h-full" />
               </div>
             </div>
 
