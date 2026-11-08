@@ -299,7 +299,7 @@ export default function EventDetail() {
               </a>
             )}
             <p className="text-xs text-muted-foreground mt-3 flex items-center justify-center gap-1">
-              <Shield className="w-3 h-3" /> Biometric verified · Real people only
+              <Shield className="w-3 h-3" /> GPS verified · Real people only
             </p>
           </div>
         </div>
