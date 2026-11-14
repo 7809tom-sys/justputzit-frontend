@@ -81,7 +81,7 @@ export default function EventDetail() {
   useSEO({
     title,
     description,
-    canonical: `https://justputzit.com/events/${id}`,
+    canonical: `https://www.justputzit.com/events/${id}`,
     jsonLd: activity
       ? {
           "@context": "https://schema.org",
@@ -92,8 +92,8 @@ export default function EventDetail() {
           "location": activity.venueAddress
             ? { "@type": "Place", "name": activity.venueName ?? "Local Venue", "address": activity.venueAddress }
             : undefined,
-          "organizer": { "@type": "Organization", "name": "Just Putzit", "url": "https://justputzit.com" },
-          "url": `https://justputzit.com/events/${id}`,
+          "organizer": { "@type": "Organization", "name": "Just Putzit", "url": "https://www.justputzit.com" },
+          "url": `https://www.justputzit.com/events/${id}`,
         }
       : undefined,
   });

@@ -982,7 +982,7 @@ export default function Home() {
   useSEO({
     title: "Just Putzit — Meet Somewhere Real.",
     description: "A free local connection app: match for dates, friends, or activity partners, then choose a safe public plan at an independent local spot or official event.",
-    canonical: "https://justputzit.com/",
+    canonical: "https://www.justputzit.com/",
     jsonLd: {
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
@@ -991,7 +991,7 @@ export default function Home() {
       "applicationCategory": "SocialNetworkingApplication",
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
       "description": "Match for dates, friends, or activity partners, then choose a safe public plan at an independent local spot or official event.",
-      "url": "https://justputzit.com",
+      "url": "https://www.justputzit.com",
     },
   });
   const { user, isAuthenticated, loading } = useAuth();

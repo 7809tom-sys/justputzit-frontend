@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useSEO } from "@/hooks/useSEO";
+import { seoTagsFor } from "@shared/seoRoutes";
 import {
   GraduationCap,
   Trophy,
@@ -22,6 +24,7 @@ import {
 const CARROLL_CAMPUS_ID = 1;
 
 export default function CampusWaitlist() {
+  useSEO(seoTagsFor("/campus/carroll"));
   const { user } = useAuth();
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);

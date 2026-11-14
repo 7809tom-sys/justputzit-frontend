@@ -3,11 +3,14 @@
  * Call this at the top of any page component to override the default SEO tags.
  */
 import { useEffect } from "react";
+import { SITE_NAME, formatPageTitle, siteUrl } from "@shared/site";
+
+const DEFAULT_OG_IMAGE = "https://www.justputzit.com/brand/just-putzit-og-image_b5de2dfe.png";
 
 interface SEOOptions {
   title: string;
   description: string;
-  /** Canonical URL (defaults to current page URL) */
+  /** Canonical URL (defaults to the www URL of the current path, without query or hash) */
   canonical?: string;
   /** Open Graph image URL */
   ogImage?: string;
@@ -15,8 +18,6 @@ interface SEOOptions {
   jsonLd?: object;
 }
 
-const DEFAULT_OG_IMAGE = "https://justputzit.com/brand/just-putzit-og-image_b5de2dfe.png";
-const SITE_NAME = "Just Putzit";
 
 function setMeta(name: string, content: string, attr: "name" | "property" = "name") {
   let el = document.querySelector<HTMLMetaElement>(`meta[${attr}="${name}"]`);
@@ -52,18 +53,19 @@ function setJsonLd(data: object) {
 
 export function useSEO({ title, description, canonical, ogImage, jsonLd }: SEOOptions) {
   useEffect(() => {
-    const fullTitle = title.includes(SITE_NAME) ? title : `${title} | ${SITE_NAME}`;
+    const fullTitle = formatPageTitle(title);
+    const url = canonical ?? siteUrl(window.location.pathname);
     document.title = fullTitle;
 
     setMeta("description", description);
     setMeta("og:title", fullTitle, "property");
     setMeta("og:description", description, "property");
-    setMeta("og:url", canonical ?? window.location.href, "property");
+    setMeta("og:url", url, "property");
     setMeta("og:image", ogImage ?? DEFAULT_OG_IMAGE, "property");
     setMeta("twitter:title", fullTitle);
     setMeta("twitter:description", description);
     setMeta("twitter:image", ogImage ?? DEFAULT_OG_IMAGE);
-    setCanonical(canonical ?? window.location.href);
+    setCanonical(url);
 
     if (jsonLd) setJsonLd(jsonLd);
 

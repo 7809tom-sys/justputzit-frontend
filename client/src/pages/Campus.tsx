@@ -10,8 +10,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { GraduationCap, Users, MapPin, CheckCircle, Search, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "wouter";
+import { useSEO } from "@/hooks/useSEO";
+import { seoTagsFor } from "@shared/seoRoutes";
 
 export default function CampusPage() {
+  useSEO(seoTagsFor("/campus"));
   const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [browseCampusId, setBrowseCampusId] = useState<number | null>(null);
