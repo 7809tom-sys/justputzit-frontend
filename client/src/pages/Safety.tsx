@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
+import { useSEO } from "@/hooks/useSEO";
+import { seoTagsFor } from "@shared/seoRoutes";
 
 const controls = [
   {
@@ -40,6 +42,7 @@ const meetupTips = [
 ];
 
 export default function Safety() {
+  useSEO(seoTagsFor("/safety"));
   return (
     <div className="min-h-screen bg-background">
       <section className="border-b border-teal-100 bg-gradient-to-br from-teal-50 via-white to-orange-50 px-4 py-16 sm:py-20">

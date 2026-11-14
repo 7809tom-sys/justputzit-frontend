@@ -7,8 +7,17 @@
   "rewrites": [
     { "source": "/storage/(.*)", "destination": "https://justputzit-backend-production.up.railway.app/manus-storage/$1" },
     { "source": "/manus-storage/(.*)", "destination": "https://justputzit-backend-production.up.railway.app/manus-storage/$1" },
-    { "source": "/sitemap.xml", "destination": "https://justputzit-backend-production.up.railway.app/sitemap.xml" },
-    { "source": "/robots.txt", "destination": "https://justputzit-backend-production.up.railway.app/robots.txt" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/safety", "destination": "/safety/index.html" },
+    { "source": "/campus", "destination": "/campus/index.html" },
+    { "source": "/campus/carroll", "destination": "/campus/carroll/index.html" },
+    { "source": "/activity-board", "destination": "/activity-board/index.html" },
+    { "source": "/community", "destination": "/community/index.html" },
+    { "source": "/events", "destination": "/events/index.html" },
+    { "source": "/city/jackson-ms", "destination": "/city/jackson-ms/index.html" },
+    { "source": "/city/madison-wi", "destination": "/city/madison-wi/index.html" },
+    { "source": "/city/milwaukee-wi", "destination": "/city/milwaukee-wi/index.html" },
+    { "source": "/city/chicago-il", "destination": "/city/chicago-il/index.html" },
+    { "source": "/city/atlanta-ga", "destination": "/city/atlanta-ga/index.html" },
+    { "source": "/(.*)", "destination": "/app-shell.html" }
   ]
 }

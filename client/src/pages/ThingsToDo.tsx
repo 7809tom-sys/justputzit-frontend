@@ -113,7 +113,7 @@ export default function ThingsToDo() {
   useSEO({
     title: `Things to Do in ${city}`,
     description: `Real things to do near ${city}: date ideas, group outings, free and cheap plans, and official local calendars. Filter by mood, budget, and time of day, then find a venue nearby.`,
-    canonical: "https://justputzit.com/things-to-do",
+    canonical: "https://www.justputzit.com/things-to-do",
   });
 
   const loadVenuesForIdea = useCallback(

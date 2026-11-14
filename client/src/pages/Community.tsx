@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from "sonner";
 import { Users, Plus, Search, BookOpen, Mountain, ChefHat, Music, Palette, Dumbbell, Globe, Gamepad2, ChevronRight, Zap, Calendar, ShieldCheck, Sparkles } from "lucide-react";
 import { useLocation } from "wouter";
+import { useSEO } from "@/hooks/useSEO";
+import { seoTagsFor } from "@shared/seoRoutes";
 import { LocalVenueBanner } from "@/components/LocalVenueBanner";
 
 const GROUP_CATEGORIES = [
@@ -37,6 +39,7 @@ const CATEGORY_EMOJIS: Record<string, string> = {
 };
 
 export default function Community() {
+  useSEO(seoTagsFor("/community"));
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
