@@ -65,7 +65,7 @@ export default function Entertainment() {
   useSEO({
     title: `Entertainment and Things to Do in ${city}`,
     description: `Live music, comedy, theatre, film, and festivals near ${city}. Every Just Putzit listing links to its official source for final times, tickets, and accessibility details.`,
-    canonical: "https://justputzit.com/entertainment",
+    canonical: "https://www.justputzit.com/entertainment",
   });
 
   const openOfficialListing = (listing: EntertainmentListing) => {

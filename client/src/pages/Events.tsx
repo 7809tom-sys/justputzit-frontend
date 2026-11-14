@@ -28,6 +28,8 @@ import { useUserCity } from "@/hooks/useUserCity";
 import { formatMilesAway, haversineDistanceMiles } from "@shared/geo";
 import { LocationOverrideControl } from "@/components/LocationOverrideControl";
 import { WaukeshaLibrarySpotlight } from "@/components/WaukeshaLibrarySpotlight";
+import { useSEO } from "@/hooks/useSEO";
+import { seoTagsFor } from "@shared/seoRoutes";
 
 const CATEGORIES = [
   { value: "all", label: "All Events", icon: Star },
@@ -285,6 +287,7 @@ function EventCard({ event, onRsvp, rsvpLoading, hasRsvped, introductionOptIn = 
 }
 
 export default function Events() {
+  useSEO(seoTagsFor("/events"));
   const { user } = useAuth();
   const { city: detectedCity, detectedCity: detectedLocation, isManualOverride } = useUserCity();
   const [category, setCategory] = useState("all");

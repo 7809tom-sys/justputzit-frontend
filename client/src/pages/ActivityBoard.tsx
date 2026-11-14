@@ -22,6 +22,8 @@ import { useMapCenter } from "@/hooks/useMapCenter";
 import { formatMilesAway, haversineDistanceMiles } from "@shared/geo";
 import { filterPersonalizedRecommendations, getRecommendationCategories, type RecommendationSort, type RecommendationTimeWindow } from "@/lib/personalizedRecommendationFilters";
 import { ACTIVITY_IDEAS } from "@shared/activityIdeas";
+import { useSEO } from "@/hooks/useSEO";
+import { seoTagsFor } from "@shared/seoRoutes";
 
 const CATEGORIES = [
   { id: "all", label: "All Activities", emoji: "✨" },
@@ -122,6 +124,8 @@ const BLANK_FORM = {
 };
 
 export default function ActivityBoard() {
+  // Also mounted at /activities; both point Google at the one /activity-board URL.
+  useSEO(seoTagsFor("/activity-board"));
   const { user } = useAuth();
   const reportedSponsoredViews = useRef(new Set<number>());
   const [selectedCategory, setSelectedCategory] = useState("all");

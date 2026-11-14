@@ -23,7 +23,7 @@ describe("Things to Do hub", () => {
   it("sets its own SEO title and description for local search", () => {
     expect(page).toContain("useSEO({");
     expect(page).toContain("Things to Do in ${city}");
-    expect(page).toContain("https://justputzit.com/things-to-do");
+    expect(page).toContain("https://www.justputzit.com/things-to-do");
   });
 
   it("lets a member filter by who is going, budget, time of day, and free text", () => {
